@@ -11,13 +11,6 @@ interface SavedMeal { id: string; name: string; calories: number; protein: numbe
 type LogEditState = { id: string; calories: number; protein: number; carbs: number; fats: number; meal_name: string } | null
 type MealEditState = { id: string; name: string; portion: string; calories: number; protein: number; carbs: number; fats: number } | null
 
-// Recompute total from items
-function sumItems(items: FoodItem[]): FoodItem {
-  return items.reduce(
-    (acc, item) => ({ name: 'total', calories: acc.calories + item.calories, protein: acc.protein + item.protein, carbs: acc.carbs + item.carbs, fats: acc.fats + item.fats }),
-    { name: 'total', calories: 0, protein: 0, carbs: 0, fats: 0 }
-  )
-}
 
 export default function LogFoodPage() {
   const [input, setInput] = useState('')
@@ -32,6 +25,8 @@ export default function LogFoodPage() {
   const [mealEdit, setMealEdit] = useState<MealEditState>(null)
   const [savingMealFor, setSavingMealFor] = useState<string | null>(null)
   const [mealEditEstimating, setMealEditEstimating] = useState(false)
+  const [popupText, setPopupText] = useState('')
+  const [reestimating, setReestimating] = useState(false)
   const [calorieGoal, setCalorieGoal] = useState<number | null>(null)
   const [streak, setStreak] = useState(0)
   const today = todayCT()
@@ -67,6 +62,7 @@ export default function LogFoodPage() {
       const data = await res.json()
       if (data.error) { setError(data.error); return }
       setBreakdown(data.breakdown)
+      setPopupText(input)
     } catch { setError('Failed to estimate. Try again.') }
     finally { setEstimating(false) }
   }
@@ -77,7 +73,7 @@ export default function LogFoodPage() {
     try {
       const res = await fetch('/api/food?mode=save', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: input, date: today, macros: breakdown }),
+        body: JSON.stringify({ text: popupText, date: today, macros: breakdown }),
       })
       const data = await res.json()
       if (data.error) { setError(data.error); return }
@@ -87,13 +83,18 @@ export default function LogFoodPage() {
     finally { setSaving(false) }
   }
 
-  // Update a single item's macro field in the breakdown and recompute total
-  function updateItem(index: number, field: keyof FoodItem, value: number) {
-    setBreakdown(prev => {
-      if (!prev) return prev
-      const items = prev.items.map((item, i) => i === index ? { ...item, [field]: value } : item)
-      return { ...prev, items, total: sumItems(items) }
-    })
+  async function handleReestimate() {
+    if (!popupText.trim()) return
+    setReestimating(true)
+    try {
+      const res = await fetch('/api/food?mode=estimate', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: popupText }),
+      })
+      const data = await res.json()
+      if (data.breakdown) setBreakdown(data.breakdown)
+    } catch { /* keep existing breakdown */ }
+    finally { setReestimating(false) }
   }
 
   async function handleDeleteLog(id: string) {
@@ -311,28 +312,41 @@ export default function LogFoodPage() {
         </button>
       </form>
 
-      {/* CONFIRM POPUP — with editable items */}
+      {/* CONFIRM POPUP */}
       {breakdown && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-end justify-center p-4" onClick={() => setBreakdown(null)}>
           <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="px-5 pt-5 pb-3">
               <h2 className="text-neutral-900 font-bold text-lg">{breakdown.meal_name}</h2>
-              <p className="text-neutral-400 text-xs mt-0.5">Edit any values before confirming</p>
+              <p className="text-neutral-400 text-xs mt-0.5">Edit your description to adjust portions, then re-estimate</p>
             </div>
 
-            {/* Editable per-item breakdown */}
-            <div className="px-5 space-y-2 max-h-56 overflow-y-auto pb-1">
+            {/* Editable description + re-estimate */}
+            <div className="px-5 space-y-2">
+              <div className="flex gap-2">
+                <textarea
+                  value={popupText}
+                  onChange={e => setPopupText(e.target.value)}
+                  rows={2}
+                  className="flex-1 bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-800 focus:outline-none focus:border-emerald-500 resize-none"
+                />
+                <button onClick={handleReestimate} disabled={reestimating || !popupText.trim()}
+                  className="self-stretch px-3 text-xs font-semibold text-white bg-emerald-600 rounded-xl disabled:opacity-40 shrink-0">
+                  {reestimating ? '...' : 'Re-estimate'}
+                </button>
+              </div>
+            </div>
+
+            {/* Read-only per-item breakdown */}
+            <div className="px-5 mt-3 space-y-1.5 max-h-48 overflow-y-auto">
               {breakdown.items.map((item, i) => (
-                <div key={i} className="bg-neutral-50 rounded-xl p-3">
-                  <p className="text-neutral-800 text-sm font-medium mb-2">{item.name}</p>
-                  <div className="grid grid-cols-4 gap-2">
+                <div key={i} className="bg-neutral-50 rounded-xl px-3 py-2.5 flex items-center justify-between gap-3">
+                  <p className="text-neutral-700 text-sm font-medium truncate flex-1">{item.name}</p>
+                  <div className="flex gap-3 shrink-0 text-right">
                     {([['calories','Cal','text-emerald-600'],['protein','Pro','text-blue-600'],['carbs','Carb','text-orange-500'],['fats','Fat','text-yellow-500']] as const).map(([key, label, color]) => (
-                      <div key={key} className="text-center">
-                        <p className={`text-xs font-medium ${color} mb-1`}>{label}</p>
-                        <input type="number"
-                          value={item[key as keyof FoodItem] as number}
-                          onChange={e => updateItem(i, key as keyof FoodItem, Number(e.target.value))}
-                          className="w-full text-center text-sm font-bold bg-white border border-neutral-200 rounded-lg py-1 focus:outline-none focus:border-emerald-500" />
+                      <div key={key} className="text-center w-8">
+                        <p className={`text-xs font-bold ${color}`}>{item[key as keyof FoodItem]}</p>
+                        <p className="text-neutral-400 text-[10px]">{label}</p>
                       </div>
                     ))}
                   </div>
@@ -340,7 +354,7 @@ export default function LogFoodPage() {
               ))}
             </div>
 
-            {/* Running total */}
+            {/* Total */}
             <div className="mx-5 mt-3 bg-neutral-900 rounded-2xl p-4">
               <p className="text-neutral-400 text-xs font-medium mb-2">Total</p>
               <div className="grid grid-cols-4 gap-2 text-center">
@@ -363,7 +377,7 @@ export default function LogFoodPage() {
                 className="flex-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-semibold py-3 rounded-xl text-sm transition-colors">
                 Cancel
               </button>
-              <button onClick={handleConfirm} disabled={saving}
+              <button onClick={handleConfirm} disabled={saving || reestimating}
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl text-sm transition-colors">
                 {saving ? 'Saving...' : 'Confirm & log'}
               </button>
