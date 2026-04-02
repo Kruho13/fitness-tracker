@@ -30,7 +30,7 @@ export async function GET() {
   const today = todayCT()
 
   const [goalsRes, streakRes] = await Promise.all([
-    supabase.from('goals').select('calories,protein').eq('user_id', user.id).single(),
+    supabase.from('goals').select('calories,protein,carbs,fats').eq('user_id', user.id).single(),
     supabase.from('food_logs').select('date').eq('user_id', user.id).gte('date', getThirtyDaysAgo()).order('date', { ascending: false }),
   ])
 
@@ -38,5 +38,8 @@ export async function GET() {
   const calorieGoal = goalsRes.data?.calories ?? 2200
   const proteinGoal = goalsRes.data?.protein ?? 180
 
-  return NextResponse.json({ streak, calorieGoal, proteinGoal })
+  const carbGoal = goalsRes.data ? (goalsRes.data as any).carbs ?? 220 : 220
+  const fatGoal = goalsRes.data ? (goalsRes.data as any).fats ?? 70 : 70
+
+  return NextResponse.json({ streak, calorieGoal, proteinGoal, carbGoal, fatGoal })
 }

@@ -25,9 +25,13 @@ export default function LogFoodPage() {
   const [mealEdit, setMealEdit] = useState<MealEditState>(null)
   const [savingMealFor, setSavingMealFor] = useState<string | null>(null)
   const [mealEditEstimating, setMealEditEstimating] = useState(false)
+  const [mealEditMode, setMealEditMode] = useState<'portion' | 'manual'>('portion')
   const [popupText, setPopupText] = useState('')
   const [reestimating, setReestimating] = useState(false)
   const [calorieGoal, setCalorieGoal] = useState<number | null>(null)
+  const [proteinGoal, setProteinGoal] = useState<number | null>(null)
+  const [carbGoal, setCarbGoal] = useState<number | null>(null)
+  const [fatGoal, setFatGoal] = useState<number | null>(null)
   const [streak, setStreak] = useState(0)
   const today = todayCT()
 
@@ -35,6 +39,9 @@ export default function LogFoodPage() {
     fetchLogs(); fetchSavedMeals()
     fetch('/api/summary').then(r => r.json()).then(d => {
       if (d.calorieGoal) setCalorieGoal(d.calorieGoal)
+      if (d.proteinGoal) setProteinGoal(d.proteinGoal)
+      if (d.carbGoal) setCarbGoal(d.carbGoal)
+      if (d.fatGoal) setFatGoal(d.fatGoal)
       if (d.streak) setStreak(d.streak)
     })
   }, [])
@@ -184,6 +191,7 @@ export default function LogFoodPage() {
   const caloriesLogged = totals.calories
   const caloriesRemaining = calorieGoal !== null ? calorieGoal - caloriesLogged : null
   const overBudget = caloriesRemaining !== null && caloriesRemaining < 0
+  const proteinRemaining = proteinGoal !== null ? Math.max(0, proteinGoal - totals.protein) : null
 
   return (
     <div className="px-4 pt-6 pb-4 space-y-5">
@@ -195,9 +203,12 @@ export default function LogFoodPage() {
         <div className="text-right flex flex-col items-end gap-1.5">
           {caloriesRemaining !== null && (
             <div className={`text-sm font-bold ${overBudget ? 'text-red-500' : 'text-emerald-600'}`}>
-              {overBudget
-                ? `${Math.abs(caloriesRemaining)} kcal over`
-                : `${caloriesRemaining} kcal left`}
+              {overBudget ? `${Math.abs(caloriesRemaining)} kcal over` : `${caloriesRemaining} kcal left`}
+            </div>
+          )}
+          {proteinRemaining !== null && (
+            <div className={`text-xs font-semibold ${proteinRemaining === 0 ? 'text-blue-400' : 'text-blue-600'}`}>
+              {proteinRemaining === 0 ? '✓ Protein hit' : `${proteinRemaining}g protein left`}
             </div>
           )}
           {streak > 0 && (
@@ -237,19 +248,41 @@ export default function LogFoodPage() {
                   <div key={meal.id} className="px-4 py-3">
                     {isEditing ? (
                       <div className="space-y-2.5">
-                        <p className="text-sm font-semibold text-neutral-800">{mealEdit.name}</p>
-                        <div className="flex gap-2">
-                          <input
-                            value={mealEdit.portion}
-                            onChange={e => setMealEdit(s => s && { ...s, portion: e.target.value })}
-                            placeholder="e.g. 300g, 1.5 cups, 2 scoops"
-                            className="flex-1 text-sm bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 focus:outline-none focus:border-emerald-500 placeholder-neutral-400"
-                          />
-                          <button onClick={handleMealRecalculate} disabled={mealEditEstimating || !mealEdit.portion.trim()}
-                            className="text-xs font-semibold text-white bg-emerald-600 px-3 rounded-xl disabled:opacity-40 shrink-0">
-                            {mealEditEstimating ? '...' : 'Recalculate'}
-                          </button>
+                        <input value={mealEdit.name} onChange={e => setMealEdit(s => s && { ...s, name: e.target.value })}
+                          className="w-full text-sm font-semibold text-neutral-900 border-b border-neutral-200 pb-1 focus:outline-none focus:border-emerald-500" />
+                        {/* Mode toggle */}
+                        <div className="flex gap-1 bg-neutral-100 rounded-lg p-0.5">
+                          {(['portion', 'manual'] as const).map(m => (
+                            <button key={m} type="button" onClick={() => setMealEditMode(m)}
+                              className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-all ${mealEditMode === m ? 'bg-white text-neutral-800 shadow-sm' : 'text-neutral-400'}`}>
+                              {m === 'portion' ? 'Adjust portion' : 'Edit manually'}
+                            </button>
+                          ))}
                         </div>
+
+                        {mealEditMode === 'portion' ? (
+                          <div className="flex gap-2">
+                            <input value={mealEdit.portion} onChange={e => setMealEdit(s => s && { ...s, portion: e.target.value })}
+                              placeholder="e.g. 300g, 1.5 cups, 2 scoops"
+                              className="flex-1 text-sm bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 focus:outline-none focus:border-emerald-500 placeholder-neutral-400" />
+                            <button onClick={handleMealRecalculate} disabled={mealEditEstimating || !mealEdit.portion.trim()}
+                              className="text-xs font-semibold text-white bg-emerald-600 px-3 rounded-xl disabled:opacity-40 shrink-0">
+                              {mealEditEstimating ? '...' : 'Recalculate'}
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-4 gap-2">
+                            {([['calories','Cal','text-emerald-600'],['protein','Pro','text-blue-600'],['carbs','Carb','text-orange-500'],['fats','Fat','text-yellow-500']] as const).map(([key, label, color]) => (
+                              <div key={key} className="text-center">
+                                <p className={`text-xs font-medium ${color} mb-1`}>{label}</p>
+                                <input type="number" value={mealEdit[key as 'calories'|'protein'|'carbs'|'fats']}
+                                  onChange={e => setMealEdit(s => s && { ...s, [key]: Number(e.target.value) })}
+                                  className="w-full text-center text-xs font-bold bg-neutral-50 border border-neutral-200 rounded-lg py-1 focus:outline-none focus:border-emerald-500" />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
                         <div className="grid grid-cols-4 gap-2 text-center bg-neutral-50 rounded-xl p-2.5">
                           {([['calories','Cal','text-emerald-600'],['protein','Pro','text-blue-600'],['carbs','Carb','text-orange-500'],['fats','Fat','text-yellow-500']] as const).map(([key, label, color]) => (
                             <div key={key}>
@@ -259,7 +292,7 @@ export default function LogFoodPage() {
                           ))}
                         </div>
                         <div className="flex gap-2">
-                          <button onClick={() => setMealEdit(null)} className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs text-neutral-500 border border-neutral-200 rounded-lg">
+                          <button onClick={() => { setMealEdit(null); setMealEditMode('portion') }} className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs text-neutral-500 border border-neutral-200 rounded-lg">
                             <X size={12} /> Cancel
                           </button>
                           <button onClick={handleSaveMealEdit} disabled={mealEditEstimating}
@@ -386,22 +419,34 @@ export default function LogFoodPage() {
         </div>
       )}
 
-      {/* Today's total */}
-      {logs.length > 0 && (
+      {/* Today's macro progress */}
+      {logs.length > 0 && calorieGoal && (
         <div className="bg-white border border-neutral-200 rounded-2xl p-4">
-          <p className="text-neutral-400 text-xs font-medium uppercase tracking-wide mb-3">Today&apos;s total</p>
-          <div className="grid grid-cols-4 gap-2 text-center">
+          <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-3">Today&apos;s intake</p>
+          <div className="grid grid-cols-2 gap-2">
             {[
-              { label: 'Cal', value: totals.calories, color: 'text-emerald-600' },
-              { label: 'Pro', value: `${totals.protein}g`, color: 'text-blue-600' },
-              { label: 'Carb', value: `${totals.carbs}g`, color: 'text-orange-500' },
-              { label: 'Fat', value: `${totals.fats}g`, color: 'text-yellow-500' },
-            ].map(m => (
-              <div key={m.label}>
-                <p className={`font-bold text-lg ${m.color}`}>{m.value}</p>
-                <p className="text-neutral-400 text-xs">{m.label}</p>
-              </div>
-            ))}
+              { label: 'Calories', current: totals.calories, goal: calorieGoal, unit: 'kcal', color: 'text-emerald-600', bar: 'bg-emerald-600' },
+              { label: 'Protein', current: totals.protein, goal: proteinGoal, unit: 'g', color: 'text-blue-600', bar: 'bg-blue-600' },
+              { label: 'Carbs', current: totals.carbs, goal: carbGoal, unit: 'g', color: 'text-orange-500', bar: 'bg-orange-500' },
+              { label: 'Fats', current: totals.fats, goal: fatGoal, unit: 'g', color: 'text-yellow-500', bar: 'bg-yellow-500' },
+            ].map(({ label, current, goal, unit, color, bar }) => {
+              const pct = goal && goal > 0 ? Math.min(100, Math.round((current / goal) * 100)) : 0
+              return (
+                <div key={label} className="bg-neutral-50 rounded-xl p-3">
+                  <div className="flex justify-between items-center mb-1">
+                    <p className="text-xs text-neutral-500 font-medium">{label}</p>
+                    <p className="text-xs text-neutral-400">{pct}%</p>
+                  </div>
+                  <p className={`text-sm font-bold ${color}`}>
+                    {current}
+                    {goal && <span className="text-neutral-400 font-normal text-xs"> / {goal}{unit === 'kcal' ? ' kcal' : unit}</span>}
+                  </p>
+                  <div className="h-1 bg-neutral-200 rounded-full mt-2 overflow-hidden">
+                    <div className={`h-full rounded-full ${bar}`} style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

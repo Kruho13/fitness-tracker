@@ -61,8 +61,7 @@ export default function OnboardingPage() {
         throw new Error(body.error ?? `Goals save failed (${goalsRes.status})`)
       }
 
-      router.push('/home')
-      router.refresh()
+      router.push('/welcome')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Try again.')
       setLoading(false)

@@ -69,22 +69,22 @@ export async function POST(req: NextRequest) {
     `- Days with food logged: ${uniqueDays} of 7`,
   ].filter(Boolean).join('\n')
 
-  const systemPrompt = `You are a no-nonsense fitness coach writing a concise weekly report for an intermediate lifter.
+  const systemPrompt = `You are a no-nonsense fitness coach writing a brief weekly report for an intermediate lifter.
 
-Your tone is direct, honest, and specific. No fluff. No excessive encouragement. Just signal.
+Tone: direct, honest, specific. No fluff, no praise padding.
 
-Write EXACTLY 3 short paragraphs with these bold headers:
+Write EXACTLY 3 paragraphs with these bold headers:
 **What happened**
 **Why**
 **What to change**
 
 Rules:
-- Reference actual numbers from the data
-- Connect the check-in answers to the outcomes
-- "What to change" should give ONE clear, specific action — not a list
-- If data is sparse, say so and focus on what's clear
-- Keep each paragraph to 2-4 sentences
-- Do not use bullet points in the report`
+- 1-2 sentences per paragraph maximum
+- Reference actual numbers
+- Connect check-in answers to outcomes — if calories are on target but weight moved the wrong way, consider whether their activity level or TDEE estimate may be off (but say it once, plainly, not as a lecture)
+- "What to change" = one specific action only
+- If data is sparse, say so in one sentence and move on
+- No bullet points`
 
   const userMessage = `Week: ${weekStart} to ${weekEnd}
 Goal mode: ${goals?.mode ?? 'maintain'}

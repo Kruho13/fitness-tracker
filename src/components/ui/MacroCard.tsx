@@ -7,9 +7,16 @@ interface MacroCardProps {
   featured?: boolean    // larger card for cal + protein
 }
 
+const BAR_COLOR: Record<string, string> = {
+  'text-emerald-600': 'bg-emerald-600',
+  'text-blue-600': 'bg-blue-600',
+  'text-orange-500': 'bg-orange-500',
+  'text-yellow-500': 'bg-yellow-500',
+}
+
 export default function MacroCard({ label, current, goal, unit = 'g', accentClass, featured }: MacroCardProps) {
   const pct = goal > 0 ? Math.min(100, Math.round((current / goal) * 100)) : 0
-  const barColor = accentClass.replace('text-', 'bg-')
+  const barColor = BAR_COLOR[accentClass] ?? 'bg-neutral-400'
 
   if (featured) {
     return (

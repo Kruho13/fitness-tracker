@@ -24,13 +24,17 @@ export default function ReportsPage() {
   const [showCheckin, setShowCheckin] = useState(searchParams.get('checkin') === '1')
   const [generating, setGenerating] = useState(false)
   const [newReportId, setNewReportId] = useState<string | null>(null)
+  const [goals, setGoals] = useState<{ calories: number; protein: number; carbs: number; fats: number } | null>(null)
 
   const [strength, setStrength] = useState<Strength>('same')
   const [gym, setGym] = useState<GymConsistency>('consistent')
   const [sleep, setSleep] = useState<Sleep>('good')
   const [tracking, setTracking] = useState<TrackingQuality>('tracked_everything')
 
-  useEffect(() => { fetchReports() }, [])
+  useEffect(() => {
+    fetchReports()
+    fetch('/api/goals').then(r => r.json()).then(d => { if (d.goals) setGoals(d.goals) })
+  }, [])
 
   async function fetchReports() {
     const res = await fetch('/api/reports')
@@ -143,8 +147,8 @@ export default function ReportsPage() {
                 <div>
                   <p className="text-neutral-900 font-semibold text-sm">{formatWeekRange(report.week_start, report.week_end)}</p>
                   <div className="flex items-center gap-3 mt-1 flex-wrap">
-                    {report.avg_calories && <span className="text-neutral-400 text-xs">{report.avg_calories} kcal avg</span>}
-                    {report.avg_protein && <span className="text-neutral-400 text-xs">{report.avg_protein}g protein avg</span>}
+                    {report.avg_calories && <span className="text-neutral-400 text-xs">{report.avg_calories}{goals?.calories ? `/${goals.calories}` : ''} kcal</span>}
+                    {report.avg_protein && <span className="text-neutral-400 text-xs">{report.avg_protein}{goals?.protein ? `/${goals.protein}` : ''}g pro</span>}
                     {deltaNum !== null && (
                       <span className={`text-xs font-semibold ${deltaNum < 0 ? 'text-emerald-600' : deltaNum > 0 ? 'text-red-500' : 'text-neutral-400'}`}>
                         {deltaNum > 0 ? '+' : ''}{weightDelta} lbs
@@ -158,20 +162,30 @@ export default function ReportsPage() {
 
               {isExpanded && (
                 <div className="px-4 pb-5 border-t border-neutral-100 pt-4 space-y-4">
-                  {/* Stats */}
+                  {/* Stats vs goals */}
                   {(report.avg_calories || report.avg_protein) && (
-                    <div className="grid grid-cols-4 gap-2 bg-neutral-50 rounded-xl p-3">
+                    <div className="grid grid-cols-2 gap-2">
                       {[
-                        { label: 'Cal', value: report.avg_calories ? `${report.avg_calories}` : '—', color: 'text-emerald-600' },
-                        { label: 'Pro', value: report.avg_protein ? `${report.avg_protein}g` : '—', color: 'text-blue-600' },
-                        { label: 'Carb', value: report.avg_carbs ? `${report.avg_carbs}g` : '—', color: 'text-orange-500' },
-                        { label: 'Fat', value: report.avg_fats ? `${report.avg_fats}g` : '—', color: 'text-yellow-500' },
-                      ].map(m => (
-                        <div key={m.label} className="text-center">
-                          <p className={`text-sm font-bold ${m.color}`}>{m.value}</p>
-                          <p className="text-neutral-400 text-xs">{m.label}</p>
-                        </div>
-                      ))}
+                        { label: 'Calories', avg: report.avg_calories, goal: goals?.calories, unit: 'kcal', color: 'text-emerald-600' },
+                        { label: 'Protein', avg: report.avg_protein, goal: goals?.protein, unit: 'g', color: 'text-blue-600' },
+                        { label: 'Carbs', avg: report.avg_carbs, goal: goals?.carbs, unit: 'g', color: 'text-orange-500' },
+                        { label: 'Fats', avg: report.avg_fats, goal: goals?.fats, unit: 'g', color: 'text-yellow-500' },
+                      ].map(m => {
+                        const pct = m.avg && m.goal ? Math.round((m.avg / m.goal) * 100) : null
+                        return (
+                          <div key={m.label} className="bg-neutral-50 rounded-xl p-3">
+                            <div className="flex items-center justify-between mb-1">
+                              <p className="text-neutral-500 text-xs font-medium">{m.label}</p>
+                              {pct !== null && <p className="text-neutral-400 text-xs">{pct}%</p>}
+                            </div>
+                            <p className={`text-sm font-bold ${m.color}`}>
+                              {m.avg ?? '—'}{m.avg ? m.unit === 'kcal' ? '' : m.unit : ''}
+                              {m.goal && <span className="text-neutral-400 font-normal text-xs"> / {m.goal}{m.unit === 'kcal' ? '' : m.unit}</span>}
+                            </p>
+                            {m.unit === 'kcal' && m.avg && <p className="text-neutral-400 text-xs">kcal avg</p>}
+                          </div>
+                        )
+                      })}
                     </div>
                   )}
                   {/* Report text */}

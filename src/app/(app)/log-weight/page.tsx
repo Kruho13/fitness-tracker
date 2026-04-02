@@ -57,7 +57,6 @@ export default function LogWeightPage() {
       if (data.error) { setError(data.error); return }
       setTodayLog(val); setSaved(true)
       setTimeout(() => setSaved(false), 2000)
-      // Update local list
       setRecentLogs(prev => {
         const filtered = prev.filter(l => l.date !== today)
         return [{ date: today, weight_lbs: val }, ...filtered]

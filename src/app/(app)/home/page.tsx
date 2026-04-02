@@ -43,7 +43,7 @@ export default async function HomePage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-neutral-400 text-xs font-medium uppercase tracking-wide">{firstName}&apos;s Fitness Tracker</p>
+          <p className="text-neutral-400 text-xs font-medium uppercase tracking-wide">{firstName}&apos;s Pulse</p>
           <p className="text-neutral-900 font-bold text-lg mt-0.5">{formatDate(today)}</p>
         </div>
         <div className="text-right">
