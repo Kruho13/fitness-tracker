@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { createClient } from '@/lib/supabase/server'
-import { todayCT } from '@/lib/utils'
+import { todayCT, logDateCT } from '@/lib/utils'
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
 
   // Mode: save — directly store pre-estimated macros (from confirm popup)
   if (mode === 'save' && macros) {
-    const logDate = date ?? todayCT()
+    const logDate = date ?? logDateCT()
     const { data, error } = await supabase.from('food_logs').insert({
       user_id: user.id,
       date: logDate,
@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const date = req.nextUrl.searchParams.get('date') ?? todayCT()
+  const date = req.nextUrl.searchParams.get('date') ?? logDateCT()
   const { data, error } = await supabase.from('food_logs').select('*')
     .eq('user_id', user.id).eq('date', date).order('created_at', { ascending: false })
 

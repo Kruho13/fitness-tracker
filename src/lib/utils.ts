@@ -10,6 +10,16 @@ export function todayCT(): string {
   return format(ct, 'yyyy-MM-dd')
 }
 
+// For food/weight logging: 12am–2:59am CT counts as the previous day
+export function logDateCT(): string {
+  const now = new Date()
+  const ct = toZonedTime(now, CT_TIMEZONE)
+  if (ct.getHours() < 3) {
+    ct.setDate(ct.getDate() - 1)
+  }
+  return format(ct, 'yyyy-MM-dd')
+}
+
 // Get the Monday of the current week in Central Time
 export function currentWeekStartCT(): string {
   const now = new Date()

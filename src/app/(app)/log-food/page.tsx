@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Trash2, ChevronDown, ChevronUp, Info, Pencil, Check, X, Plus, BookOpen, Flame } from 'lucide-react'
-import { todayCT, formatDate } from '@/lib/utils'
+import { logDateCT, formatDate } from '@/lib/utils'
 
 interface FoodItem { name: string; calories: number; protein: number; carbs: number; fats: number }
 interface Breakdown { meal_name: string; items: FoodItem[]; total: FoodItem }
@@ -35,7 +35,7 @@ export default function LogFoodPage() {
   const [carbGoal, setCarbGoal] = useState<number | null>(null)
   const [fatGoal, setFatGoal] = useState<number | null>(null)
   const [streak, setStreak] = useState(0)
-  const today = todayCT()
+  const today = logDateCT()
 
   useEffect(() => {
     fetchLogs(); fetchSavedMeals()
