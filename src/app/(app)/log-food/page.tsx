@@ -8,7 +8,7 @@ interface FoodItem { name: string; calories: number; protein: number; carbs: num
 interface Breakdown { meal_name: string; items: FoodItem[]; total: FoodItem }
 interface FoodLog { id: string; raw_text: string; meal_name: string | null; calories: number; protein: number; carbs: number; fats: number }
 interface SavedMeal { id: string; name: string; calories: number; protein: number; carbs: number; fats: number }
-type LogEditState = { id: string; calories: number; protein: number; carbs: number; fats: number; meal_name: string } | null
+type LogEditState = { id: string; rawText: string; calories: number; protein: number; carbs: number; fats: number; meal_name: string } | null
 type MealEditState = { id: string; name: string; portion: string; calories: number; protein: number; carbs: number; fats: number } | null
 
 
@@ -26,6 +26,8 @@ export default function LogFoodPage() {
   const [savingMealFor, setSavingMealFor] = useState<string | null>(null)
   const [mealEditEstimating, setMealEditEstimating] = useState(false)
   const [mealEditMode, setMealEditMode] = useState<'portion' | 'manual'>('portion')
+  const [logEditMode, setLogEditMode] = useState<'portion' | 'manual'>('portion')
+  const [logEditEstimating, setLogEditEstimating] = useState(false)
   const [popupText, setPopupText] = useState('')
   const [reestimating, setReestimating] = useState(false)
   const [calorieGoal, setCalorieGoal] = useState<number | null>(null)
@@ -109,6 +111,23 @@ export default function LogFoodPage() {
     setLogs(prev => prev.filter(l => l.id !== id))
   }
 
+  async function handleLogReestimate() {
+    if (!logEdit || !logEdit.rawText.trim()) return
+    setLogEditEstimating(true)
+    try {
+      const res = await fetch('/api/food?mode=estimate', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: logEdit.rawText }),
+      })
+      const data = await res.json()
+      if (data.breakdown?.total) {
+        const t = data.breakdown.total
+        setLogEdit(s => s && { ...s, calories: t.calories, protein: t.protein, carbs: t.carbs, fats: t.fats, meal_name: data.breakdown.meal_name ?? s.meal_name })
+      }
+    } catch { /* keep existing values */ }
+    finally { setLogEditEstimating(false) }
+  }
+
   async function handleSaveLogEdit() {
     if (!logEdit) return
     const res = await fetch('/api/food', {
@@ -119,6 +138,7 @@ export default function LogFoodPage() {
     if (!data.error) {
       setLogs(prev => prev.map(l => l.id === logEdit.id ? { ...l, ...logEdit } : l))
       setLogEdit(null)
+      setLogEditMode('portion')
     }
   }
 
@@ -461,24 +481,54 @@ export default function LogFoodPage() {
             return (
               <div key={log.id} className="bg-white border border-neutral-200 rounded-2xl p-4">
                 {isEditing ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2.5">
                     <input value={logEdit.meal_name} onChange={e => setLogEdit(s => s && { ...s, meal_name: e.target.value })}
                       className="w-full text-sm font-semibold text-neutral-900 border-b border-neutral-200 pb-1 focus:outline-none focus:border-emerald-500" />
-                    <div className="grid grid-cols-4 gap-2">
+                    {/* Mode toggle */}
+                    <div className="flex gap-1 bg-neutral-100 rounded-lg p-0.5">
+                      {(['portion', 'manual'] as const).map(m => (
+                        <button key={m} type="button" onClick={() => setLogEditMode(m)}
+                          className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-all ${logEditMode === m ? 'bg-white text-neutral-800 shadow-sm' : 'text-neutral-400'}`}>
+                          {m === 'portion' ? 'Adjust portion' : 'Edit manually'}
+                        </button>
+                      ))}
+                    </div>
+                    {logEditMode === 'portion' ? (
+                      <div className="flex gap-2">
+                        <textarea value={logEdit.rawText} onChange={e => setLogEdit(s => s && { ...s, rawText: e.target.value })}
+                          rows={2} placeholder="Describe the meal with portions..."
+                          className="flex-1 text-sm bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 focus:outline-none focus:border-emerald-500 resize-none placeholder-neutral-400" />
+                        <button onClick={handleLogReestimate} disabled={logEditEstimating || !logEdit.rawText.trim()}
+                          className="self-stretch px-3 text-xs font-semibold text-white bg-emerald-600 rounded-xl disabled:opacity-40 shrink-0">
+                          {logEditEstimating ? '...' : 'Re-estimate'}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-4 gap-2">
+                        {([['calories','Cal','text-emerald-600'],['protein','Pro','text-blue-600'],['carbs','Carb','text-orange-500'],['fats','Fat','text-yellow-500']] as const).map(([key, label, color]) => (
+                          <div key={key} className="text-center">
+                            <p className={`text-xs font-medium ${color} mb-1`}>{label}</p>
+                            <input type="number" value={logEdit[key as 'calories'|'protein'|'carbs'|'fats']}
+                              onChange={e => setLogEdit(s => s && { ...s, [key]: Number(e.target.value) })}
+                              className="w-full text-center text-sm font-bold bg-neutral-50 border border-neutral-200 rounded-lg py-1.5 focus:outline-none focus:border-emerald-500" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {/* Macro preview */}
+                    <div className="grid grid-cols-4 gap-2 text-center bg-neutral-50 rounded-xl p-2.5">
                       {([['calories','Cal','text-emerald-600'],['protein','Pro','text-blue-600'],['carbs','Carb','text-orange-500'],['fats','Fat','text-yellow-500']] as const).map(([key, label, color]) => (
-                        <div key={key} className="text-center">
-                          <p className={`text-xs font-medium ${color} mb-1`}>{label}</p>
-                          <input type="number" value={logEdit[key as keyof LogEditState & string] as number}
-                            onChange={e => setLogEdit(s => s && { ...s, [key]: Number(e.target.value) })}
-                            className="w-full text-center text-sm font-bold bg-neutral-50 border border-neutral-200 rounded-lg py-1.5 focus:outline-none focus:border-emerald-500" />
+                        <div key={key}>
+                          <p className={`text-sm font-bold ${color}`}>{logEdit[key as 'calories'|'protein'|'carbs'|'fats']}{key !== 'calories' ? 'g' : ''}</p>
+                          <p className="text-neutral-400 text-xs">{label}</p>
                         </div>
                       ))}
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => setLogEdit(null)} className="flex-1 flex items-center justify-center gap-1 py-2 text-sm text-neutral-500 border border-neutral-200 rounded-xl hover:bg-neutral-50">
+                      <button onClick={() => { setLogEdit(null); setLogEditMode('portion') }} className="flex-1 flex items-center justify-center gap-1 py-2 text-sm text-neutral-500 border border-neutral-200 rounded-xl hover:bg-neutral-50">
                         <X size={14} /> Cancel
                       </button>
-                      <button onClick={handleSaveLogEdit} className="flex-1 flex items-center justify-center gap-1 py-2 text-sm text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl font-semibold">
+                      <button onClick={handleSaveLogEdit} disabled={logEditEstimating} className="flex-1 flex items-center justify-center gap-1 py-2 text-sm text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl font-semibold disabled:opacity-40">
                         <Check size={14} /> Save
                       </button>
                     </div>
@@ -491,7 +541,7 @@ export default function LogFoodPage() {
                         {log.meal_name && <p className="text-neutral-400 text-xs truncate">{log.raw_text}</p>}
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        <button onClick={() => setLogEdit({ id: log.id, calories: log.calories, protein: log.protein, carbs: log.carbs, fats: log.fats, meal_name: log.meal_name ?? log.raw_text })}
+                        <button onClick={() => { setLogEditMode('portion'); setLogEdit({ id: log.id, rawText: log.raw_text, calories: log.calories, protein: log.protein, carbs: log.carbs, fats: log.fats, meal_name: log.meal_name ?? log.raw_text }) }}
                           className="p-1.5 text-neutral-400 hover:text-neutral-600 rounded-lg hover:bg-neutral-100 transition-colors">
                           <Pencil size={13} />
                         </button>

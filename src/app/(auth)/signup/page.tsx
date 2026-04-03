@@ -98,8 +98,7 @@ export default function SignupPage() {
       SEED_REPORTS.map(r => ({ ...r, user_id: data.user!.id }))
     )
 
-    router.push('/home')
-    router.refresh()
+    router.push('/welcome')
   }
 
   const stepNum = step === 'account' ? 1 : step === 'body' ? 2 : 3
@@ -112,7 +111,7 @@ export default function SignupPage() {
       <div className="w-full max-w-sm">
         {/* Header */}
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-neutral-900 tracking-tight">Fitness Tracker</h1>
+          <h1 className="text-2xl font-bold text-neutral-900 tracking-tight">Pulse</h1>
           <div className="flex items-center justify-center gap-2 mt-3">
             {[1, 2, 3].map(n => (
               <div key={n} className={`h-1.5 rounded-full transition-all ${n <= stepNum ? 'bg-emerald-500 w-8' : 'bg-neutral-200 w-4'}`} />
