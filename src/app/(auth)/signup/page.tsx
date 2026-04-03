@@ -263,6 +263,7 @@ export default function SignupPage() {
         }
         .input:focus { border-color: #10b981; }
         .input::placeholder { color: #9ca3af; }
+        select.input { appearance: auto; background-image: none; }
         .btn-primary {
           background: #059669;
           color: white;
