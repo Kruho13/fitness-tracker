@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { SEED_REPORTS } from '@/lib/seed'
 import { calculateMacros, heightToCm, ACTIVITY_LABELS, GOAL_LABELS, GOAL_DESCRIPTIONS, type GoalMode, type ActivityLevel, type Gender } from '@/lib/calculations'
 import { ChevronLeft } from 'lucide-react'
 
@@ -92,11 +91,6 @@ export default function SignupPage() {
       date: today,
       weight_lbs,
     }, { onConflict: 'user_id,date' })
-
-    // Seed demo weekly reports
-    await supabase.from('weekly_reports').insert(
-      SEED_REPORTS.map(r => ({ ...r, user_id: data.user!.id }))
-    )
 
     router.push('/welcome')
   }
