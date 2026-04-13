@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Trash2, ChevronDown, ChevronUp, Info, Pencil, Check, X, Plus, BookOpen, Flame } from 'lucide-react'
+import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Info, Pencil, Check, X, Plus, BookOpen, Flame } from 'lucide-react'
 import { logDateCT, formatDate } from '@/lib/utils'
 
 interface FoodItem { name: string; calories: number; protein: number; carbs: number; fats: number }
@@ -36,9 +36,16 @@ export default function LogFoodPage() {
   const [fatGoal, setFatGoal] = useState<number | null>(null)
   const [streak, setStreak] = useState(0)
   const today = logDateCT()
+  const [viewDate, setViewDate] = useState(today)
+
+  function getYesterday(date: string): string {
+    const d = new Date(date + 'T12:00:00')
+    d.setDate(d.getDate() - 1)
+    return d.toISOString().split('T')[0]
+  }
 
   useEffect(() => {
-    fetchLogs(); fetchSavedMeals()
+    fetchSavedMeals()
     fetch('/api/summary').then(r => r.json()).then(d => {
       if (d.calorieGoal) setCalorieGoal(d.calorieGoal)
       if (d.proteinGoal) setProteinGoal(d.proteinGoal)
@@ -48,8 +55,10 @@ export default function LogFoodPage() {
     })
   }, [])
 
+  useEffect(() => { fetchLogs() }, [viewDate])
+
   async function fetchLogs() {
-    const res = await fetch(`/api/food?date=${today}`)
+    const res = await fetch(`/api/food?date=${viewDate}`)
     const data = await res.json()
     if (data.logs) setLogs(data.logs)
   }
@@ -82,7 +91,7 @@ export default function LogFoodPage() {
     try {
       const res = await fetch('/api/food?mode=save', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: popupText, date: today, macros: breakdown }),
+        body: JSON.stringify({ text: popupText, date: viewDate, macros: breakdown }),
       })
       const data = await res.json()
       if (data.error) { setError(data.error); return }
@@ -193,7 +202,7 @@ export default function LogFoodPage() {
       const res = await fetch('/api/food?mode=save', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: meal.name, date: today,
+          text: meal.name, date: viewDate,
           macros: { meal_name: meal.name, total: { calories: meal.calories, protein: meal.protein, carbs: meal.carbs, fats: meal.fats } },
         }),
       })
@@ -218,7 +227,19 @@ export default function LogFoodPage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-neutral-900">Log Food</h1>
-          <p className="text-neutral-400 text-sm mt-0.5">{formatDate(today)}</p>
+          <div className="flex items-center gap-1 mt-0.5">
+            <button onClick={() => setViewDate(getYesterday(today))} disabled={viewDate !== today}
+              className="p-0.5 rounded text-neutral-400 hover:text-neutral-600 disabled:opacity-30 transition-colors">
+              <ChevronLeft size={15} />
+            </button>
+            <p className="text-neutral-400 text-sm">
+              {viewDate === today ? 'Today' : 'Yesterday'}, {formatDate(viewDate)}
+            </p>
+            <button onClick={() => setViewDate(today)} disabled={viewDate === today}
+              className="p-0.5 rounded text-neutral-400 hover:text-neutral-600 disabled:opacity-30 transition-colors">
+              <ChevronRight size={15} />
+            </button>
+          </div>
         </div>
         <div className="text-right flex flex-col items-end gap-1.5">
           {caloriesRemaining !== null && (
@@ -239,6 +260,13 @@ export default function LogFoodPage() {
           )}
         </div>
       </div>
+
+      {viewDate !== today && (
+        <button onClick={() => setViewDate(today)}
+          className="w-full bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-amber-700 text-xs font-semibold text-center hover:bg-amber-100 transition-colors">
+          Viewing yesterday — tap to return to today
+        </button>
+      )}
 
       <div className="flex gap-2.5 bg-white border border-neutral-200 rounded-xl p-3">
         <Info size={14} className="text-neutral-400 shrink-0 mt-0.5" />
