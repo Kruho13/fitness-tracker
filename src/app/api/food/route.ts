@@ -60,10 +60,12 @@ Rules:
 - Round all numbers to whole numbers
 - meal_name: a short clean label for the whole meal (e.g. "Chicken & Rice Bowl")
 - Never refuse — always return your best estimate
+- reasoning: one plain-English sentence explaining what assumptions you made (e.g. portion sizes assumed, cooking method, variable ingredients). Be specific and honest about uncertainty. Keep it under 20 words.
 
 Respond ONLY in this exact JSON format:
 {
   "meal_name": "string",
+  "reasoning": "string",
   "items": [
     { "name": "string", "calories": number, "protein": number, "carbs": number, "fats": number }
   ],

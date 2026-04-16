@@ -5,7 +5,7 @@ import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Info, Pencil
 import { logDateCT, formatDate } from '@/lib/utils'
 
 interface FoodItem { name: string; calories: number; protein: number; carbs: number; fats: number }
-interface Breakdown { meal_name: string; items: FoodItem[]; total: FoodItem }
+interface Breakdown { meal_name: string; reasoning?: string; items: FoodItem[]; total: FoodItem }
 interface FoodLog { id: string; raw_text: string; meal_name: string | null; calories: number; protein: number; carbs: number; fats: number }
 interface SavedMeal { id: string; name: string; calories: number; protein: number; carbs: number; fats: number }
 type LogEditState = { id: string; rawText: string; calories: number; protein: number; carbs: number; fats: number; meal_name: string } | null
@@ -35,6 +35,8 @@ export default function LogFoodPage() {
   const [carbGoal, setCarbGoal] = useState<number | null>(null)
   const [fatGoal, setFatGoal] = useState<number | null>(null)
   const [streak, setStreak] = useState(0)
+  const [showPushPrompt, setShowPushPrompt] = useState(false)
+  const [pushEnabled, setPushEnabled] = useState(false)
   const today = logDateCT()
   const [viewDate, setViewDate] = useState(today)
 
@@ -68,6 +70,26 @@ export default function LogFoodPage() {
     if (data.meals) setSavedMeals(data.meals)
   }
 
+  async function registerPush() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js')
+      const permission = await Notification.requestPermission()
+      if (permission !== 'granted') return
+      const existing = await reg.pushManager.getSubscription()
+      const sub = existing ?? await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+      })
+      await fetch('/api/push/subscribe', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: sub, notify_hour: 20 }),
+      })
+      setPushEnabled(true)
+      setShowPushPrompt(false)
+    } catch { /* silently fail */ }
+  }
+
   async function handleEstimate(e: React.FormEvent) {
     e.preventDefault()
     if (!input.trim()) return
@@ -97,6 +119,10 @@ export default function LogFoodPage() {
       if (data.error) { setError(data.error); return }
       setLogs(prev => [data.log, ...prev])
       setInput(''); setBreakdown(null)
+      // Show push prompt after first ever log
+      if (logs.length === 0 && !pushEnabled && Notification.permission === 'default') {
+        setShowPushPrompt(true)
+      }
     } catch { setError('Failed to save.') }
     finally { setSaving(false) }
   }
@@ -268,10 +294,27 @@ export default function LogFoodPage() {
         </button>
       )}
 
+      {showPushPrompt && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+          <p className="text-emerald-900 font-semibold text-sm">Keep your streak going 🔥</p>
+          <p className="text-emerald-700 text-xs mt-1 mb-3">Get a daily reminder at 8pm if you haven&apos;t logged yet.</p>
+          <div className="flex gap-2">
+            <button onClick={registerPush}
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2 rounded-lg transition-colors">
+              Turn on reminders
+            </button>
+            <button onClick={() => setShowPushPrompt(false)}
+              className="px-3 py-2 text-xs text-emerald-600 hover:text-emerald-700 font-medium">
+              Not now
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-2.5 bg-white border border-neutral-200 rounded-xl p-3">
         <Info size={14} className="text-neutral-400 shrink-0 mt-0.5" />
         <p className="text-neutral-500 text-xs leading-relaxed">
-          For best accuracy, include weights (e.g. <span className="font-medium text-neutral-700">200g chicken breast</span>) or measurements (1 cup, 2 tbsp). These are always estimates.
+          A rough guess is always better than nothing — <span className="font-medium text-neutral-700">"big mac and fries"</span> works. Add weights or measurements for better accuracy.
         </p>
       </div>
 
@@ -417,6 +460,13 @@ export default function LogFoodPage() {
                 </button>
               </div>
             </div>
+
+            {/* AI reasoning */}
+            {breakdown.reasoning && (
+              <div className="px-5 mt-2">
+                <p className="text-neutral-400 text-xs italic leading-relaxed">💡 {breakdown.reasoning}</p>
+              </div>
+            )}
 
             {/* Read-only per-item breakdown */}
             <div className="px-5 mt-3 space-y-1.5 max-h-48 overflow-y-auto">
