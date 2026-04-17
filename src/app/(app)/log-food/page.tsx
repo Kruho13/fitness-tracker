@@ -311,10 +311,10 @@ export default function LogFoodPage() {
         </div>
       )}
 
-      <div className="flex gap-2.5 bg-white border border-neutral-200 rounded-xl p-3">
-        <Info size={14} className="text-neutral-400 shrink-0 mt-0.5" />
-        <p className="text-neutral-500 text-xs leading-relaxed">
-          A rough guess is always better than nothing — <span className="font-medium text-neutral-700">"big mac and fries"</span> works. Add weights or measurements for better accuracy.
+      <div className="flex gap-2.5 bg-amber-50 border border-amber-200 rounded-xl p-3">
+        <Info size={14} className="text-amber-500 shrink-0 mt-0.5" />
+        <p className="text-amber-800 text-xs leading-relaxed">
+          A rough guess is always better than nothing — <span className="font-medium">"big mac and fries"</span> works. Add weights or measurements for better accuracy.
         </p>
       </div>
 
