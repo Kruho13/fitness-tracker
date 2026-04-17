@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Pencil, Check, X, Plus, BookOpen, Flame } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Pencil, Check, X, Plus, BookOpen, Flame, Camera, Mic } from 'lucide-react'
 import { logDateCT, formatDate } from '@/lib/utils'
 
 interface FoodItem { name: string; calories: number; protein: number; carbs: number; fats: number }
@@ -37,6 +37,9 @@ export default function LogFoodPage() {
   const [streak, setStreak] = useState(0)
   const [showPushPrompt, setShowPushPrompt] = useState(false)
   const [pushEnabled, setPushEnabled] = useState(false)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [listening, setListening] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const today = logDateCT()
   const [viewDate, setViewDate] = useState(today)
 
@@ -88,6 +91,47 @@ export default function LogFoodPage() {
       setPushEnabled(true)
       setShowPushPrompt(false)
     } catch { /* silently fail */ }
+  }
+
+  function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result as string
+      setPhotoPreview(dataUrl)
+      handleEstimateFromImage(dataUrl)
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
+
+  async function handleEstimateFromImage(dataUrl: string) {
+    setEstimating(true); setError('')
+    try {
+      const res = await fetch('/api/food?mode=estimate', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: input, image: dataUrl }),
+      })
+      const data = await res.json()
+      if (data.error) { setError(data.error); return }
+      setBreakdown(data.breakdown)
+      setPopupText(input || 'Photo')
+    } catch { setError('Failed to estimate. Try again.') }
+    finally { setEstimating(false) }
+  }
+
+  function handleMic() {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) { setError('Voice not supported on this browser'); return }
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'en-US'
+    recognition.interimResults = false
+    recognition.onstart = () => setListening(true)
+    recognition.onend = () => setListening(false)
+    recognition.onresult = (e: any) => setInput(prev => prev ? prev + ' ' + e.results[0][0].transcript : e.results[0][0].transcript)
+    recognition.onerror = () => setListening(false)
+    recognition.start()
   }
 
   async function handleEstimate(e: React.FormEvent) {
@@ -418,13 +462,35 @@ export default function LogFoodPage() {
 
       {/* Input */}
       <form onSubmit={handleEstimate} className="space-y-3">
-        <textarea value={input} onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleEstimate(e) } }}
-          placeholder="e.g. 200g grilled chicken, 1 cup white rice, side of broccoli"
-          className="w-full bg-white border border-neutral-200 rounded-2xl px-4 py-3.5 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-emerald-500 transition-colors resize-none text-sm"
-          rows={3} />
+        <div className="relative">
+          <textarea value={input} onChange={e => setInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleEstimate(e) } }}
+            placeholder="e.g. 200g grilled chicken, 1 cup white rice, side of broccoli"
+            className="w-full bg-white border border-neutral-200 rounded-2xl px-4 py-3.5 pr-20 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-emerald-500 transition-colors resize-none text-sm"
+            rows={3} />
+          <div className="absolute bottom-3 right-3 flex gap-1.5">
+            <button type="button" onClick={() => fileInputRef.current?.click()}
+              className="p-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-500 transition-colors" title="Log from photo">
+              <Camera size={16} />
+            </button>
+            <button type="button" onClick={handleMic}
+              className={`p-2 rounded-xl transition-colors ${listening ? 'bg-red-100 text-red-500' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-500'}`} title="Speak your meal">
+              <Mic size={16} />
+            </button>
+          </div>
+        </div>
+        <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoSelect} className="hidden" />
+        {photoPreview && (
+          <div className="relative">
+            <img src={photoPreview} alt="Food photo" className="w-full h-32 object-cover rounded-xl" />
+            <button type="button" onClick={() => setPhotoPreview(null)}
+              className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1">
+              <X size={12} />
+            </button>
+          </div>
+        )}
         {error && <p className="text-red-500 text-sm">{error}</p>}
-        <button type="submit" disabled={estimating || !input.trim()}
+        <button type="submit" disabled={estimating || (!input.trim() && !photoPreview)}
           className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-semibold py-3.5 rounded-2xl transition-colors text-sm">
           {estimating ? 'Estimating...' : 'Estimate macros'}
         </button>

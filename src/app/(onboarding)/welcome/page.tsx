@@ -11,8 +11,12 @@ const STEPS = [
     subheading: 'Pulse is built for intermediate lifters who want useful signal — not another app to babysit.',
     content: (
       <div className="space-y-3">
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+          <p className="text-emerald-900 font-semibold text-sm">Consistency beats perfection</p>
+          <p className="text-emerald-700 text-xs mt-1 leading-relaxed">An imperfect log every day beats a perfect log twice a week. Your weight trend over time is the real signal — individual estimates don&apos;t need to be exact.</p>
+        </div>
         {[
-          { step: '1', label: 'Log food in plain text', detail: 'Describe what you ate — AI estimates the macros instantly.' },
+          { step: '1', label: 'Log food in plain text', detail: 'Describe what you ate — AI estimates the macros instantly. Any description is better than nothing.' },
           { step: '2', label: 'Log your weight daily', detail: 'First thing every morning. 10 seconds. Builds your trend line.' },
           { step: '3', label: 'Complete the Sunday check-in', detail: '4 quick questions. Pulse generates a plain-English weekly report.' },
         ].map(({ step, label, detail }) => (
@@ -29,47 +33,37 @@ const STEPS = [
   },
   {
     tag: 'Food Logging',
-    heading: 'Be specific.\nGet accuracy.',
+    heading: 'Log it fast.\nEdit if needed.',
     subheading: null,
     content: (
       <div className="space-y-3">
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-          <p className="text-amber-800 text-sm font-bold mb-1">This is the most important thing in this app.</p>
-          <p className="text-amber-700 text-xs leading-relaxed">
-            The AI estimates macros based on what you describe. The more specific your description, the more accurate the result. Vague inputs produce vague estimates.
+        <div className="bg-white border border-neutral-200 rounded-2xl p-4 space-y-3">
+          {[
+            { label: 'Quick & vague', example: '"big mac and fries"', note: 'works fine — log it and move on' },
+            { label: 'More detail', example: '"200g grilled chicken, 1 cup rice"', note: 'better accuracy' },
+            { label: 'Packaged foods', example: '"Oikos yogurt, 130 cal, 20g protein"', note: 'add the label numbers for exact values' },
+            { label: 'Photo', example: 'Tap the camera icon', note: 'snap your plate and AI reads it' },
+          ].map(({ label, example, note }) => (
+            <div key={label} className="flex items-start gap-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+              <div>
+                <span className="text-neutral-500 text-xs">{label} — </span>
+                <span className="text-neutral-800 text-xs font-medium">{example}</span>
+                <p className="text-neutral-400 text-xs mt-0.5">{note}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="bg-white border border-neutral-200 rounded-2xl p-4">
+          <p className="text-sm font-semibold text-neutral-800 mb-1">Every entry is editable</p>
+          <p className="text-xs text-neutral-400 leading-relaxed">
+            Not happy with an estimate? Tap any logged item to adjust the numbers manually. Log fast, refine later.
           </p>
         </div>
-
-        <div className="space-y-2">
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Do this</p>
-          {[
-            '200g grilled chicken breast, 1 cup cooked jasmine rice, 1 tbsp olive oil',
-            '2 large eggs scrambled, 2 slices whole wheat toast with 1 tbsp butter',
-            '1 scoop whey protein (30g) in 300ml whole milk',
-          ].map(ex => (
-            <div key={ex} className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5">
-              <p className="text-emerald-800 text-xs leading-relaxed">"{ex}"</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="space-y-2">
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Not this</p>
-          {[
-            'some chicken and rice',
-            'eggs and toast',
-            'protein shake',
-          ].map(ex => (
-            <div key={ex} className="bg-red-50 border border-red-200 rounded-xl px-3 py-2.5">
-              <p className="text-red-700 text-xs">"{ex}" — too vague, AI will guess broadly</p>
-            </div>
-          ))}
-        </div>
-
         <div className="bg-white border border-neutral-200 rounded-2xl p-4">
-          <p className="text-sm font-semibold text-neutral-800 mb-1">Log multiple items at once</p>
+          <p className="text-sm font-semibold text-neutral-800 mb-1">Save meals you repeat</p>
           <p className="text-xs text-neutral-400 leading-relaxed">
-            You can describe an entire meal in one entry. The AI breaks it into individual items so you can see each component.
+            Log something 3 times and Pulse will suggest saving it. One tap to add it next time — no re-describing.
           </p>
         </div>
       </div>
@@ -77,26 +71,26 @@ const STEPS = [
   },
   {
     tag: 'Portions & Estimates',
-    heading: 'Weigh it once.\nEstimate forever.',
-    subheading: 'You don\'t need to weigh everything forever — but doing it early builds calibration.',
+    heading: 'Log as you go.\nNot at the end.',
+    subheading: 'You\'ll remember portions more accurately right after eating.',
     content: (
       <div className="space-y-3">
         {[
           {
+            title: 'Log right after eating',
+            body: 'Waiting until end of day means forgotten meals and guessed portions. 30 seconds after each meal keeps it accurate.',
+          },
+          {
             title: 'Use a food scale when you can',
-            body: 'Grams are always more accurate than visual estimates. A $10 kitchen scale is the single best investment for logging accuracy.',
+            body: 'Grams beat visual estimates every time. A $10 kitchen scale is the single best investment for accuracy.',
           },
           {
             title: 'Use measurements as a fallback',
-            body: '1 cup, 1 tbsp, 1 scoop — these give the AI enough to work with when you can\'t weigh. Always better than "some" or "a bit".',
+            body: '1 cup, 1 tbsp, 1 scoop — always better than "some" or "a bit". Give the AI something to work with.',
           },
           {
             title: 'Include cooking method',
             body: '"Grilled", "fried in oil", "baked" — matters for calories. Frying adds fat; steaming doesn\'t.',
-          },
-          {
-            title: 'Save your common meals',
-            body: 'After logging a meal a few times, hit "Save as meal". Next time you log it, one tap adds it instantly — no re-describing.',
           },
         ].map(({ title, body }) => (
           <div key={title} className="bg-white border border-neutral-200 rounded-2xl p-4">

@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const mode = req.nextUrl.searchParams.get('mode') ?? 'save'
-  const { text, date, macros } = await req.json()
+  const { text, date, macros, image } = await req.json()
 
   // Mode: save — directly store pre-estimated macros (from confirm popup)
   if (mode === 'save' && macros) {
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Mode: estimate — call OpenAI, return breakdown without saving
-  if (!text?.trim()) return NextResponse.json({ error: 'No food text provided' }, { status: 400 })
+  if (!text?.trim() && !image) return NextResponse.json({ error: 'No food text provided' }, { status: 400 })
 
   const { data: goals } = await supabase.from('goals').select('*').eq('user_id', user.id).single()
 
@@ -57,6 +57,7 @@ User daily goals: ${goals?.calories ?? 2200} kcal, ${goals?.protein ?? 180}g pro
 Rules:
 - Break the input into individual food items
 - Use weights/measurements if given; otherwise use realistic common portions
+- If the user provides calories or protein numbers for a specific item, use those exact values
 - Round all numbers to whole numbers
 - meal_name: a short clean label for the whole meal (e.g. "Chicken & Rice Bowl")
 - Never refuse — always return your best estimate
@@ -73,11 +74,18 @@ Respond ONLY in this exact JSON format:
 }`
 
   try {
+    const userContent = image
+      ? [
+          { type: 'text' as const, text: text?.trim() ? text : 'What food is in this image? Estimate the macros.' },
+          { type: 'image_url' as const, image_url: { url: image } },
+        ]
+      : text
+
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: image ? 'gpt-4o' : 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: text },
+        { role: 'user', content: userContent },
       ],
       response_format: { type: 'json_object' },
       max_tokens: 400,
