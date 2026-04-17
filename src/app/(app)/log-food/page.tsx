@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Pencil, Check, X, Plus, BookOpen, Flame, Camera, Mic } from 'lucide-react'
+import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Pencil, Check, X, Plus, BookOpen, Flame, Camera, Mic, Utensils } from 'lucide-react'
 import { logDateCT, formatDate } from '@/lib/utils'
 
 interface FoodItem { name: string; calories: number; protein: number; carbs: number; fats: number }
@@ -163,6 +163,7 @@ export default function LogFoodPage() {
       if (data.error) { setError(data.error); return }
       setLogs(prev => [data.log, ...prev])
       setInput(''); setBreakdown(null)
+      navigator.vibrate?.(50)
       // Show push prompt after first ever log
       if (logs.length === 0 && !pushEnabled && Notification.permission === 'default') {
         setShowPushPrompt(true)
@@ -188,6 +189,7 @@ export default function LogFoodPage() {
   async function handleDeleteLog(id: string) {
     await fetch('/api/food', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
     setLogs(prev => prev.filter(l => l.id !== id))
+    navigator.vibrate?.(50)
   }
 
   async function handleLogReestimate() {
@@ -502,7 +504,7 @@ export default function LogFoodPage() {
       {/* CONFIRM POPUP */}
       {breakdown && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-end justify-center p-4" onClick={() => setBreakdown(null)}>
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-slide-up" onClick={e => e.stopPropagation()}>
             <div className="px-5 pt-5 pb-3">
               <h2 className="text-neutral-900 font-bold text-lg">{breakdown.meal_name}</h2>
               <p className="text-neutral-400 text-xs mt-0.5">Edit your description to adjust portions, then re-estimate</p>
@@ -723,7 +725,15 @@ export default function LogFoodPage() {
       )}
 
       {logs.length === 0 && (
-        <p className="text-center text-neutral-400 text-sm py-6">No food logged today. Start above.</p>
+        <div className="flex flex-col items-center justify-center py-10 gap-3">
+          <div className="w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center">
+            <Utensils size={24} className="text-neutral-300" />
+          </div>
+          <div className="text-center">
+            <p className="text-neutral-600 text-sm font-semibold">Nothing logged yet</p>
+            <p className="text-neutral-400 text-xs mt-1">Any description gets you started — even &ldquo;burger and fries&rdquo;</p>
+          </div>
+        </div>
       )}
     </div>
   )

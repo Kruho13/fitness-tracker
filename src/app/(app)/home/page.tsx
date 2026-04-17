@@ -47,14 +47,15 @@ export default async function HomePage() {
           <p className="text-neutral-400 text-xs font-medium uppercase tracking-wide">{firstName}&apos;s Pulse</p>
           <p className="text-neutral-900 font-bold text-lg mt-0.5">{formatDate(today)}</p>
         </div>
-        <div className="text-right">
+        <div className="flex flex-col items-end gap-2">
           <span className="inline-block bg-emerald-50 text-emerald-700 text-xs font-semibold px-2.5 py-1 rounded-full border border-emerald-100">
             {goalLabel}
           </span>
           {streak > 0 && (
-            <div className="flex items-center justify-end gap-1 mt-1.5">
-              <Flame size={13} className="text-orange-400" />
-              <span className="text-xs font-semibold text-neutral-600">{streak} day streak</span>
+            <div className="flex items-center gap-1.5 bg-orange-50 border border-orange-200 rounded-xl px-3 py-1.5">
+              <Flame size={15} className="text-orange-500" />
+              <span className="text-sm font-bold text-orange-600">{streak}</span>
+              <span className="text-xs font-medium text-orange-500">day streak</span>
             </div>
           )}
         </div>

@@ -42,24 +42,26 @@ function CustomTooltip({ active, payload, label }: any) {
   )
 }
 
-export default function WeightChart({ data }: { data: WeightPoint[] }) {
-  if (data.length === 0) {
-    return (
-      <div className="bg-white border border-neutral-200 rounded-2xl p-6 flex items-center justify-center h-40">
-        <p className="text-neutral-400 text-sm">Log your weight to see your trend</p>
+function EmptyChart() {
+  return (
+    <div className="bg-white border border-neutral-200 rounded-2xl p-6 flex flex-col items-center justify-center h-40 gap-3">
+      <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       </div>
-    )
-  }
+      <div className="text-center">
+        <p className="text-neutral-600 text-sm font-semibold">No weight data yet</p>
+        <p className="text-neutral-400 text-xs mt-0.5">Log your weight daily to build your trend line</p>
+      </div>
+    </div>
+  )
+}
+
+export default function WeightChart({ data }: { data: WeightPoint[] }) {
+  if (data.length === 0) return <EmptyChart />
 
   const chartData = weeklyAverages(data)
 
-  if (chartData.length === 0) {
-    return (
-      <div className="bg-white border border-neutral-200 rounded-2xl p-6 flex items-center justify-center h-40">
-        <p className="text-neutral-400 text-sm">Log your weight to see your trend</p>
-      </div>
-    )
-  }
+  if (chartData.length === 0) return <EmptyChart />
 
   const weights = chartData.map(d => d.weight)
   const minY = Math.floor(Math.min(...weights)) - 2
