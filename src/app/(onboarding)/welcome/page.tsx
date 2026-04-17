@@ -12,8 +12,8 @@ const STEPS = [
     content: (
       <div className="space-y-3">
         <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
-          <p className="text-emerald-900 font-semibold text-sm">Consistency beats perfection</p>
-          <p className="text-emerald-700 text-xs mt-1 leading-relaxed">An imperfect log every day beats a perfect log twice a week. Your weight trend over time is the real signal — individual estimates don&apos;t need to be exact.</p>
+          <p className="text-emerald-900 font-semibold text-sm">Any log is better than no log</p>
+          <p className="text-emerald-700 text-xs mt-1 leading-relaxed">Even a quick description like &ldquo;burger and fries&rdquo; gives you visibility into what you&apos;re eating — and that awareness is what drives real change. You can&apos;t improve what you can&apos;t see.</p>
         </div>
         {[
           { step: '1', label: 'Log food in plain text', detail: 'Describe what you ate — AI estimates the macros instantly. Any description is better than nothing.' },
@@ -72,8 +72,8 @@ const STEPS = [
       <div className="space-y-3">
         {[
           {
-            title: 'Log right after eating',
-            body: 'Waiting until end of day means forgotten meals and guessed portions. 30 seconds after each meal keeps it accurate.',
+            title: 'Log before or around meal time',
+            body: 'It\'s tempting to dig in first — but 30 seconds before eating builds the habit and keeps portions fresh in your mind. Adjust or edit after you finish.',
           },
           {
             title: 'Use a food scale when you can',
