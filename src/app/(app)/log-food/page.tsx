@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Info, Pencil, Check, X, Plus, BookOpen, Flame } from 'lucide-react'
+import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Pencil, Check, X, Plus, BookOpen, Flame } from 'lucide-react'
 import { logDateCT, formatDate } from '@/lib/utils'
 
 interface FoodItem { name: string; calories: number; protein: number; carbs: number; fats: number }
@@ -311,12 +311,6 @@ export default function LogFoodPage() {
         </div>
       )}
 
-      <div className="flex gap-2.5 bg-amber-50 border border-amber-200 rounded-xl p-3">
-        <Info size={14} className="text-amber-500 shrink-0 mt-0.5" />
-        <p className="text-amber-800 text-xs leading-relaxed">
-          A rough guess is always better than nothing — <span className="font-medium">"big mac and fries"</span> works. Add weights or measurements for better accuracy.
-        </p>
-      </div>
 
       {/* Saved meals */}
       {savedMeals.length > 0 && (

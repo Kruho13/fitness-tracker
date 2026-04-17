@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { calculateMacros, heightToCm, ACTIVITY_LABELS, GOAL_LABELS, GOAL_DESCRIPTIONS, type GoalMode, type ActivityLevel, type Gender } from '@/lib/calculations'
 import { ChevronLeft } from 'lucide-react'
 
-type Step = 'body' | 'activity'
+type Step = 'body' | 'activity' | 'tip'
 
 export default function OnboardingPage() {
   const router = useRouter()
@@ -61,7 +61,7 @@ export default function OnboardingPage() {
         throw new Error(body.error ?? `Goals save failed (${goalsRes.status})`)
       }
 
-      router.push('/welcome')
+      setStep('tip')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Try again.')
       setLoading(false)
@@ -78,16 +78,19 @@ export default function OnboardingPage() {
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-4">
-            <div className={`h-1.5 rounded-full transition-all ${step === 'body' ? 'bg-emerald-500 w-8' : 'bg-emerald-500 w-8'}`} />
-            <div className={`h-1.5 rounded-full transition-all ${step === 'activity' ? 'bg-emerald-500 w-8' : 'bg-neutral-200 w-4'}`} />
+            <div className={`h-1.5 rounded-full transition-all ${step !== 'tip' ? 'bg-emerald-500 w-8' : 'bg-emerald-500 w-8'}`} />
+            <div className={`h-1.5 rounded-full transition-all ${step === 'activity' || step === 'tip' ? 'bg-emerald-500 w-8' : 'bg-neutral-200 w-4'}`} />
+            <div className={`h-1.5 rounded-full transition-all ${step === 'tip' ? 'bg-emerald-500 w-8' : 'bg-neutral-200 w-4'}`} />
           </div>
           <h1 className="text-2xl font-bold text-neutral-900">
-            {step === 'body' ? 'Your body stats' : 'Activity & goal'}
+            {step === 'body' ? 'Your body stats' : step === 'activity' ? 'Activity & goal' : "You're all set"}
           </h1>
           <p className="text-neutral-400 text-sm mt-1">
             {step === 'body'
               ? 'Used to calculate your personalized calorie and macro targets'
-              : 'Used to set the right calorie adjustment for your goal'}
+              : step === 'activity'
+              ? 'Used to set the right calorie adjustment for your goal'
+              : 'One thing before you start'}
           </p>
         </div>
 
@@ -185,6 +188,38 @@ export default function OnboardingPage() {
                 {loading ? 'Saving...' : 'Save & continue'}
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Step 3 — Logging tip */}
+        {step === 'tip' && (
+          <div className="space-y-5">
+            <div className="bg-white border border-neutral-200 rounded-2xl p-5 space-y-4">
+              <div>
+                <p className="text-neutral-900 font-semibold text-sm">Logging food is easier than you think</p>
+                <p className="text-neutral-500 text-sm mt-1">Just describe what you ate in plain English. No calorie counting, no barcodes.</p>
+              </div>
+              <div className="space-y-2.5">
+                {[
+                  { label: 'Quick & vague', example: '"big mac and fries"', note: 'works fine' },
+                  { label: 'More detail', example: '"200g grilled chicken, 1 cup rice"', note: 'better accuracy' },
+                  { label: 'Specific brands', example: '"2 slices Great Value sourdough"', note: 'great accuracy' },
+                ].map(({ label, example, note }) => (
+                  <div key={label} className="flex items-start gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                    <div>
+                      <span className="text-neutral-500 text-xs">{label} — </span>
+                      <span className="text-neutral-800 text-xs font-medium">{example}</span>
+                      <span className="text-neutral-400 text-xs"> ({note})</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-neutral-400 text-xs border-t border-neutral-100 pt-3">These are always estimates — your weight trend over time is the real signal.</p>
+            </div>
+            <button onClick={() => router.push('/welcome')} className="btn-primary w-full">
+              Start tracking
+            </button>
           </div>
         )}
       </div>
