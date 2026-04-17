@@ -33,38 +33,33 @@ const STEPS = [
   },
   {
     tag: 'Food Logging',
-    heading: 'Log it fast.\nEdit if needed.',
-    subheading: null,
+    heading: 'Any log beats\nno log.',
+    subheading: 'More detail = more accurate — but a rough entry is always worth logging.',
     content: (
       <div className="space-y-3">
         <div className="bg-white border border-neutral-200 rounded-2xl p-4 space-y-3">
+          <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">Ranked by accuracy</p>
           {[
-            { label: 'Quick & vague', example: '"big mac and fries"', note: 'works fine — log it and move on' },
-            { label: 'More detail', example: '"200g grilled chicken, 1 cup rice"', note: 'better accuracy' },
-            { label: 'Packaged foods', example: '"Oikos yogurt, 130 cal, 20g protein"', note: 'add the label numbers for exact values' },
-            { label: 'Photo', example: 'Tap the camera icon', note: 'snap your plate and AI reads it' },
-          ].map(({ label, example, note }) => (
-            <div key={label} className="flex items-start gap-3">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+            { rank: '1', label: 'Weigh it', example: '"400g chicken breast, 1 cup rice"', note: 'Most accurate', color: 'bg-emerald-600' },
+            { rank: '2', label: 'Measure it', example: '"1 cup oats, 2 tbsp peanut butter"', note: 'Great', color: 'bg-emerald-500' },
+            { rank: '3', label: 'Packaged + label', example: '"Oikos yogurt, 130 cal, 20g protein"', note: 'Exact for that item', color: 'bg-emerald-400' },
+            { rank: '4', label: 'Photo + description', example: 'Snap plate + "Chipotle chicken bowl"', note: 'Good — context helps a lot', color: 'bg-blue-400' },
+            { rank: '5', label: 'Name it clearly', example: '"Big Mac and large fries"', note: 'Good estimate', color: 'bg-neutral-400' },
+            { rank: '6', label: 'Just describe it', example: '"some chicken and rice"', note: 'Rough — still worth logging', color: 'bg-neutral-300' },
+          ].map(({ rank, label, example, note, color }) => (
+            <div key={rank} className="flex items-start gap-3">
+              <div className={`w-5 h-5 rounded-full ${color} text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5`}>{rank}</div>
               <div>
-                <span className="text-neutral-500 text-xs">{label} — </span>
-                <span className="text-neutral-800 text-xs font-medium">{example}</span>
-                <p className="text-neutral-400 text-xs mt-0.5">{note}</p>
+                <span className="text-neutral-800 text-xs font-semibold">{label}</span>
+                <span className="text-neutral-400 text-xs"> — {note}</span>
+                <p className="text-neutral-500 text-xs mt-0.5 italic">{example}</p>
               </div>
             </div>
           ))}
         </div>
         <div className="bg-white border border-neutral-200 rounded-2xl p-4">
           <p className="text-sm font-semibold text-neutral-800 mb-1">Every entry is editable</p>
-          <p className="text-xs text-neutral-400 leading-relaxed">
-            Not happy with an estimate? Tap any logged item to adjust the numbers manually. Log fast, refine later.
-          </p>
-        </div>
-        <div className="bg-white border border-neutral-200 rounded-2xl p-4">
-          <p className="text-sm font-semibold text-neutral-800 mb-1">Save meals you repeat</p>
-          <p className="text-xs text-neutral-400 leading-relaxed">
-            Log something 3 times and Pulse will suggest saving it. One tap to add it next time — no re-describing.
-          </p>
+          <p className="text-xs text-neutral-400 leading-relaxed">Not happy with an estimate? Tap any logged item to adjust the numbers manually. Log fast, refine later.</p>
         </div>
       </div>
     ),

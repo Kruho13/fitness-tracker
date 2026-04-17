@@ -481,12 +481,15 @@ export default function LogFoodPage() {
         </div>
         <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoSelect} className="hidden" />
         {photoPreview && (
-          <div className="relative">
-            <img src={photoPreview} alt="Food photo" className="w-full h-32 object-cover rounded-xl" />
-            <button type="button" onClick={() => setPhotoPreview(null)}
-              className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1">
-              <X size={12} />
-            </button>
+          <div className="space-y-1.5">
+            <div className="relative">
+              <img src={photoPreview} alt="Food photo" className="w-full h-32 object-cover rounded-xl" />
+              <button type="button" onClick={() => setPhotoPreview(null)}
+                className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1">
+                <X size={12} />
+              </button>
+            </div>
+            <p className="text-neutral-400 text-xs px-1">Add a description for better accuracy — e.g. <span className="text-neutral-600">"Chipotle chicken bowl"</span></p>
           </div>
         )}
         {error && <p className="text-red-500 text-sm">{error}</p>}
