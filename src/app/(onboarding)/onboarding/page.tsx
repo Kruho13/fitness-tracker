@@ -87,9 +87,9 @@ export default function OnboardingPage() {
           </h1>
           <p className="text-neutral-400 text-sm mt-1">
             {step === 'body'
-              ? 'Used to calculate your personalized calorie and macro targets'
+              ? 'Used to calculate your personalized calorie and macro targets — you can edit these anytime'
               : step === 'activity'
-              ? 'Used to set the right calorie adjustment for your goal'
+              ? 'Used to set the right calorie adjustment for your goal — you can edit these anytime'
               : 'One thing before you start'}
           </p>
         </div>

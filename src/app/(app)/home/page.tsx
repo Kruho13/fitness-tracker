@@ -5,6 +5,7 @@ import MacroCard from '@/components/ui/MacroCard'
 import WeightChart from '@/components/ui/WeightChart'
 import Link from 'next/link'
 import { Utensils, Scale, Target, BarChart2, Flame } from 'lucide-react'
+import SignOutButton from '@/components/ui/SignOutButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -100,6 +101,8 @@ export default async function HomePage() {
 
       {/* Weight chart */}
       <WeightChart data={weightData} />
+
+      <SignOutButton />
     </div>
   )
 }

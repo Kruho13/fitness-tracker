@@ -2,12 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { calculateMacros, ACTIVITY_LABELS, GOAL_LABELS, GOAL_DESCRIPTIONS, type GoalMode, type ActivityLevel, type Gender } from '@/lib/calculations'
-import { Info, LogOut } from 'lucide-react'
+import { Info } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
 
 export default function GoalsPage() {
-  const router = useRouter()
+
 
   // Profile state
   const [gender, setGender] = useState<Gender>('male')
@@ -62,12 +61,6 @@ export default function GoalsPage() {
       }
     }).finally(() => setFetching(false))
   }, [])
-
-  async function handleSignOut() {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/login')
-  }
 
   // Recalculate whenever profile fields or mode changes, unless user has manually overridden
   useEffect(() => {
@@ -198,11 +191,6 @@ export default function GoalsPage() {
         </button>
       </form>
 
-      <button onClick={handleSignOut}
-        className="w-full flex items-center justify-center gap-2 py-3 text-sm text-neutral-400 hover:text-red-500 transition-colors border border-neutral-200 rounded-2xl hover:border-red-200 mt-2">
-        <LogOut size={15} />
-        Sign out
-      </button>
     </div>
   )
 }
