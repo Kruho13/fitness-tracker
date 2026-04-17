@@ -12,9 +12,18 @@ type LogEditState = { id: string; rawText: string; calories: number; protein: nu
 type MealEditState = { id: string; name: string; portion: string; calories: number; protein: number; carbs: number; fats: number } | null
 
 
+const THINKING_MESSAGES = [
+  'Reading your meal...',
+  'Estimating portions...',
+  'Calculating macros...',
+  'Checking the numbers...',
+  'Almost there...',
+]
+
 export default function LogFoodPage() {
   const [input, setInput] = useState('')
   const [estimating, setEstimating] = useState(false)
+  const [thinkingIdx, setThinkingIdx] = useState(0)
   const [saving, setSaving] = useState(false)
   const [breakdown, setBreakdown] = useState<Breakdown | null>(null)
   const [logs, setLogs] = useState<FoodLog[]>([])
@@ -61,6 +70,12 @@ export default function LogFoodPage() {
   }, [])
 
   useEffect(() => { fetchLogs() }, [viewDate])
+
+  useEffect(() => {
+    if (!estimating) { setThinkingIdx(0); return }
+    const id = setInterval(() => setThinkingIdx(i => (i + 1) % THINKING_MESSAGES.length), 1400)
+    return () => clearInterval(id)
+  }, [estimating])
 
   async function fetchLogs() {
     const res = await fetch(`/api/food?date=${viewDate}`)
@@ -496,8 +511,17 @@ export default function LogFoodPage() {
         )}
         {error && <p className="text-red-500 text-sm">{error}</p>}
         <button type="submit" disabled={estimating || (!input.trim() && !photoPreview)}
-          className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-semibold py-3.5 rounded-2xl transition-colors text-sm">
-          {estimating ? 'Estimating...' : 'Estimate macros'}
+          className={`w-full text-white font-semibold py-3.5 rounded-2xl transition-all text-sm flex items-center justify-center gap-2 ${estimating ? 'bg-emerald-700' : 'bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40'}`}>
+          {estimating ? (
+            <>
+              <span className="flex gap-0.5">
+                <span className="w-1.5 h-1.5 bg-white/70 rounded-full animate-[bounce_1s_ease-in-out_0s_infinite]" />
+                <span className="w-1.5 h-1.5 bg-white/70 rounded-full animate-[bounce_1s_ease-in-out_0.2s_infinite]" />
+                <span className="w-1.5 h-1.5 bg-white/70 rounded-full animate-[bounce_1s_ease-in-out_0.4s_infinite]" />
+              </span>
+              <span key={thinkingIdx} className="animate-[fadeIn_0.4s_ease-in]">{THINKING_MESSAGES[thinkingIdx]}</span>
+            </>
+          ) : 'Estimate macros'}
         </button>
       </form>
 
