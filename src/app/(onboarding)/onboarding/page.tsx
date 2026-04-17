@@ -191,32 +191,52 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* Step 3 — Logging tip */}
+        {/* Step 3 — Mindset + best practices */}
         {step === 'tip' && (
-          <div className="space-y-5">
-            <div className="bg-white border border-neutral-200 rounded-2xl p-5 space-y-4">
-              <div>
-                <p className="text-neutral-900 font-semibold text-sm">Logging food is easier than you think</p>
-                <p className="text-neutral-500 text-sm mt-1">Just describe what you ate in plain English. No calorie counting, no barcodes.</p>
-              </div>
-              <div className="space-y-2.5">
-                {[
-                  { label: 'Quick & vague', example: '"big mac and fries"', note: 'works fine' },
-                  { label: 'More detail', example: '"200g grilled chicken, 1 cup rice"', note: 'better accuracy' },
-                  { label: 'Specific brands', example: '"2 slices Great Value sourdough"', note: 'great accuracy' },
-                ].map(({ label, example, note }) => (
-                  <div key={label} className="flex items-start gap-3">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                    <div>
-                      <span className="text-neutral-500 text-xs">{label} — </span>
-                      <span className="text-neutral-800 text-xs font-medium">{example}</span>
-                      <span className="text-neutral-400 text-xs"> ({note})</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <p className="text-neutral-400 text-xs border-t border-neutral-100 pt-3">These are always estimates — your weight trend over time is the real signal.</p>
+          <div className="space-y-4">
+            {/* Motivation */}
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5">
+              <p className="text-emerald-900 font-semibold text-sm">Consistency beats perfection</p>
+              <p className="text-emerald-700 text-sm mt-1 leading-relaxed">
+                An imperfect log every day beats a perfect log twice a week. Your weight trend over time is the real signal — individual estimates don&apos;t need to be exact.
+              </p>
             </div>
+
+            {/* How to log */}
+            <div className="bg-white border border-neutral-200 rounded-2xl p-5 space-y-4">
+              <p className="text-neutral-900 font-semibold text-sm">How to log food</p>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                  <div>
+                    <p className="text-neutral-800 text-xs font-medium">Just describe it in plain English</p>
+                    <p className="text-neutral-400 text-xs mt-0.5">&ldquo;big mac and fries&rdquo; or &ldquo;bowl of oatmeal with banana&rdquo; — no barcodes, no calorie counting</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                  <div>
+                    <p className="text-neutral-800 text-xs font-medium">For packaged foods, add the label numbers</p>
+                    <p className="text-neutral-400 text-xs mt-0.5">&ldquo;Oikos yogurt, 130 cal, 20g protein&rdquo; — this locks in the exact values from the label</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                  <div>
+                    <p className="text-neutral-800 text-xs font-medium">Save meals you eat regularly</p>
+                    <p className="text-neutral-400 text-xs mt-0.5">After logging something 3 times, save it — one tap to add it next time</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                  <div>
+                    <p className="text-neutral-800 text-xs font-medium">Log as you go, not at the end of the day</p>
+                    <p className="text-neutral-400 text-xs mt-0.5">You&apos;ll remember portions more accurately right after eating</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <button onClick={() => router.push('/welcome')} className="btn-primary w-full">
               Start tracking
             </button>
