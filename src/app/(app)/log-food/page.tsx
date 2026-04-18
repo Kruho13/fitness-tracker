@@ -226,16 +226,20 @@ export default function LogFoodPage() {
 
   async function handleSaveLogEdit() {
     if (!logEdit) return
-    const res = await fetch('/api/food', {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(logEdit),
-    })
-    const data = await res.json()
-    if (!data.error) {
-      setLogs(prev => prev.map(l => l.id === logEdit.id ? { ...l, ...logEdit } : l))
+    try {
+      const res = await fetch('/api/food', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(logEdit),
+      })
+      const data = await res.json()
+      if (data.error) { setError(data.error); return }
+      setLogs(prev => prev.map(l => l.id === logEdit.id
+        ? { ...l, raw_text: logEdit.rawText, meal_name: logEdit.meal_name, calories: logEdit.calories, protein: logEdit.protein, carbs: logEdit.carbs, fats: logEdit.fats }
+        : l))
       setLogEdit(null)
       setLogEditMode('portion')
-    }
+      navigator.vibrate?.(50)
+    } catch { setError('Failed to save changes.') }
   }
 
   async function handleSaveMeal(log: FoodLog) {

@@ -117,9 +117,11 @@ export async function PATCH(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { id, calories, protein, carbs, fats, meal_name } = await req.json()
+  const { id, rawText, calories, protein, carbs, fats, meal_name } = await req.json()
+  const updates: Record<string, unknown> = { calories, protein, carbs, fats, meal_name }
+  if (rawText !== undefined) updates.raw_text = rawText
   const { data, error } = await supabase.from('food_logs')
-    .update({ calories, protein, carbs, fats, meal_name })
+    .update(updates)
     .eq('id', id).eq('user_id', user.id).select().single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
