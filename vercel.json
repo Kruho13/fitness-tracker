@@ -6,11 +6,11 @@
     },
     {
       "path": "/api/push/send?meal=lunch",
-      "schedule": "0 17 * * *"
+      "schedule": "0 18 * * *"
     },
     {
       "path": "/api/push/send?meal=dinner",
-      "schedule": "0 23 * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
