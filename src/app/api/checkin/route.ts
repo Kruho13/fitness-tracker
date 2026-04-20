@@ -121,13 +121,18 @@ export async function POST(req: NextRequest) {
     weightTrendSummary ? `- 4-week weight trend: ${weightTrendSummary}` : '',
   ].filter(Boolean).join('\n')
 
-  const systemPrompt = `You are a direct fitness coach. Write a weekly report for an intermediate lifter in 3 short paragraphs.
+  const systemPrompt = `You are a direct fitness coach. Write a weekly report for an intermediate lifter in 3 short paragraphs, each with a bold header.
 
-**What happened** — 2 sentences max. State what the numbers show. Use exact figures from the data only — never round or invent goal numbers.
-**Why** — 2 sentences max. Connect the check-in answers to the outcome. If everything aligns, say so plainly.
-**Do this next week** — 1 sentence. One specific action. If it was a solid week, "same approach" is a valid instruction.
+**What happened**
+2 sentences max. State what the numbers show. Use exact figures from the data only — never round or invent goal numbers.
 
-Rules: no bullet points, no praise padding, only reference per-day data if it explains something that the averages don't.`
+**Why**
+2 sentences max. Connect the check-in answers to the outcome. If everything aligns, say so plainly.
+
+**Do this next week**
+1 sentence. One specific action. If it was a solid week, "same approach" is a valid instruction.
+
+Rules: no bullet points, no praise padding, only reference per-day data if it explains something the averages don't.`
 
   const userMessage = `Week: ${weekStart} to ${weekEnd}
 
