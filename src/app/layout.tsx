@@ -15,6 +15,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Pulse",
   description: "AI-powered fitness tracking for intermediate lifters",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Pulse",
+  },
 };
 
 export default function RootLayout({

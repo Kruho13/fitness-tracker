@@ -47,7 +47,6 @@ export default function LogFoodPage() {
   const [showPushPrompt, setShowPushPrompt] = useState(false)
   const [pushEnabled, setPushEnabled] = useState(false)
   const [pushError, setPushError] = useState(false)
-  const [saveMealSuggestion, setSaveMealSuggestion] = useState<{ logId: string; name: string } | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [listening, setListening] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -194,11 +193,6 @@ export default function LogFoodPage() {
       setLogs(prev => [data.log, ...prev])
       setInput(''); setBreakdown(null)
       navigator.vibrate?.(50)
-      // Suggest saving the meal if it's not already saved
-      const mealName = breakdown.meal_name
-      if (mealName && !savedMeals.some(m => m.name === mealName)) {
-        setSaveMealSuggestion({ logId: data.log.id, name: mealName })
-      }
       // Show push prompt after first log of the day
       if (logs.length === 0 && !pushEnabled && Notification.permission === 'default' && !localStorage.getItem('push_dismissed')) {
         setShowPushPrompt(true)
@@ -380,41 +374,18 @@ export default function LogFoodPage() {
       )}
 
       {showPushPrompt && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl animate-slide-up p-6 space-y-4">
-            <div className="space-y-1.5">
-              <h2 className="text-neutral-900 font-bold text-lg">Build the habit</h2>
-              <p className="text-neutral-500 text-sm">Get a nudge around meal times on days you forget to log.</p>
-            </div>
-            {pushError && <p className="text-red-500 text-xs">Couldn&apos;t set up notifications — check your browser settings and try again.</p>}
-            <div className="flex flex-col gap-2">
-              <button onClick={registerPush}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3.5 rounded-2xl text-sm transition-colors">
-                Turn on reminders
-              </button>
-              <button onClick={() => { localStorage.setItem('push_dismissed', '1'); setShowPushPrompt(false) }}
-                className="w-full py-3 text-sm text-neutral-400 font-medium">
-                Not now
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {saveMealSuggestion && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
-          <p className="text-emerald-800 text-sm font-medium truncate flex-1">Save &ldquo;{saveMealSuggestion.name}&rdquo; for quick logging?</p>
-          <div className="flex items-center gap-2 shrink-0">
-            <button onClick={async () => {
-              const log = logs.find(l => l.id === saveMealSuggestion.logId)
-              if (log) await handleSaveMeal(log)
-              setSaveMealSuggestion(null)
-            }} className="text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-lg transition-colors">
-              Save
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+          <p className="text-emerald-900 font-semibold text-sm">Build the habit</p>
+          <p className="text-emerald-700 text-xs mt-1 mb-3">Get a nudge around meal times on days you forget to log.</p>
+          {pushError && <p className="text-red-500 text-xs mb-2">Couldn&apos;t set up notifications — check your browser settings and try again.</p>}
+          <div className="flex gap-2">
+            <button onClick={registerPush}
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2 rounded-lg transition-colors">
+              Turn on reminders
             </button>
-            <button onClick={() => setSaveMealSuggestion(null)}
-              className="text-xs text-emerald-600 font-medium px-2 py-1.5">
-              Skip
+            <button onClick={() => { localStorage.setItem('push_dismissed', '1'); setShowPushPrompt(false) }}
+              className="px-3 py-2 text-xs text-emerald-600 hover:text-emerald-700 font-medium">
+              Not now
             </button>
           </div>
         </div>
