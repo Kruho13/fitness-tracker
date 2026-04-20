@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Pencil, Check, X, Plus, BookOpen, Flame, Camera, Mic, Utensils } from 'lucide-react'
+import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Pencil, Check, X, Plus, BookOpen, Flame, Camera, Mic, Utensils, Bell } from 'lucide-react'
 import { logDateCT, formatDate } from '@/lib/utils'
 
 interface FoodItem { name: string; calories: number; protein: number; carbs: number; fats: number }
@@ -47,6 +47,21 @@ export default function LogFoodPage() {
   const [showPushPrompt, setShowPushPrompt] = useState(false)
   const [pushEnabled, setPushEnabled] = useState(false)
   const [pushError, setPushError] = useState(false)
+
+  function getPushPromptCount() { return parseInt(localStorage.getItem('push_prompt_count') ?? '0') }
+  function shouldShowPushPrompt(currentStreak: number) {
+    if (pushEnabled || Notification.permission !== 'default') return false
+    const count = getPushPromptCount()
+    if (count === 0) return true
+    if (count === 1 && currentStreak >= 2) return true  // will be 3-day streak after this log
+    if (count === 2 && currentStreak >= 6) return true  // will be 7-day streak after this log
+    return false
+  }
+  function dismissPushPrompt() {
+    const count = getPushPromptCount()
+    localStorage.setItem('push_prompt_count', String(count + 1))
+    setShowPushPrompt(false)
+  }
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [listening, setListening] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -121,8 +136,10 @@ export default function LogFoodPage() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subscription: sub }),
       })
-      if (res.ok) setPushEnabled(true)
-      else throw new Error('Subscribe API failed')
+      if (res.ok) {
+        setPushEnabled(true)
+        localStorage.setItem('push_prompt_count', '3') // max out counter so no more prompts
+      } else throw new Error('Subscribe API failed')
     } catch (err) {
       console.error('Push registration failed:', err)
       setPushError(true)
@@ -208,8 +225,8 @@ export default function LogFoodPage() {
       setLogs(prev => [data.log, ...prev])
       setInput(''); setBreakdown(null)
       navigator.vibrate?.(50)
-      // Show push prompt after first log of the day
-      if (logs.length === 0 && !pushEnabled && Notification.permission === 'default' && !localStorage.getItem('push_dismissed')) {
+      // Show push prompt after first log of the day at streak milestones
+      if (logs.length === 0 && shouldShowPushPrompt(streak)) {
         setShowPushPrompt(true)
       }
     } catch { setError('Failed to save.') }
@@ -389,19 +406,28 @@ export default function LogFoodPage() {
       )}
 
       {showPushPrompt && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-          <p className="text-emerald-900 font-semibold text-sm">Build the habit</p>
-          <p className="text-emerald-700 text-xs mt-1 mb-3">Get a nudge around meal times on days you forget to log.</p>
-          {pushError && <p className="text-red-500 text-xs mb-2">Couldn&apos;t set up notifications — check your browser settings and try again.</p>}
-          <div className="flex gap-2">
-            <button onClick={registerPush}
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2 rounded-lg transition-colors">
-              Turn on reminders
-            </button>
-            <button onClick={() => { localStorage.setItem('push_dismissed', '1'); setShowPushPrompt(false) }}
-              className="px-3 py-2 text-xs text-emerald-600 hover:text-emerald-700 font-medium">
-              Not now
-            </button>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6">
+          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-7 space-y-5 animate-slide-up">
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center">
+                <Bell size={24} className="text-emerald-600" />
+              </div>
+              <div className="space-y-1.5">
+                <h2 className="text-neutral-900 font-bold text-xl">Never miss a log</h2>
+                <p className="text-neutral-500 text-sm leading-relaxed">Get a nudge around meal times on days you forget to log. No spam — only when you haven&apos;t tracked yet.</p>
+              </div>
+            </div>
+            {pushError && <p className="text-red-500 text-xs text-center">Couldn&apos;t set up notifications — check your browser settings and try again.</p>}
+            <div className="flex flex-col gap-2">
+              <button onClick={registerPush}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3.5 rounded-2xl text-sm transition-colors">
+                Turn on reminders
+              </button>
+              <button onClick={dismissPushPrompt}
+                className="w-full py-2.5 text-sm text-neutral-400 font-medium">
+                Not now
+              </button>
+            </div>
           </div>
         </div>
       )}
