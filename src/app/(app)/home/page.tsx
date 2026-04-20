@@ -3,6 +3,7 @@ import { todayCT, isSundayCT, formatDate, currentWeekStartCT } from '@/lib/utils
 import { GOAL_LABELS } from '@/lib/calculations'
 import MacroCard from '@/components/ui/MacroCard'
 import WeightChart from '@/components/ui/WeightChart'
+import SundayCheckinModal from '@/components/ui/SundayCheckinModal'
 import Link from 'next/link'
 import { Utensils, Scale, Target, BarChart2, Flame } from 'lucide-react'
 import SignOutButton from '@/components/ui/SignOutButton'
@@ -17,12 +18,13 @@ export default async function HomePage() {
   const today = todayCT()
   const firstName = user.user_metadata?.full_name?.split(' ')[0] ?? 'there'
 
-  const [goalsRes, foodRes, weightRes, checkinRes, streakRes] = await Promise.all([
+  const [goalsRes, foodRes, weightRes, checkinRes, streakRes, tenDayFoodRes] = await Promise.all([
     supabase.from('goals').select('*').eq('user_id', user.id).single(),
     supabase.from('food_logs').select('calories,protein').eq('user_id', user.id).eq('date', today),
     supabase.from('weight_logs').select('date,weight_lbs').eq('user_id', user.id).gte('date', getFourWeeksAgo()).order('date', { ascending: true }),
     supabase.from('weekly_checkins').select('id').eq('user_id', user.id).eq('week_start', currentWeekStartCT()).maybeSingle(),
     supabase.from('food_logs').select('date').eq('user_id', user.id).gte('date', getThirtyDaysAgo()).order('date', { ascending: false }),
+    supabase.from('food_logs').select('date,calories').eq('user_id', user.id).gte('date', getSevenDaysAgo()).order('date', { ascending: true }),
   ])
 
   const goals = goalsRes.data ?? { calories: 2200, protein: 180, mode: 'maintain' }
@@ -35,6 +37,30 @@ export default async function HomePage() {
   const weightData = weightRes.data ?? []
   const showCheckinPrompt = isSundayCT() && !checkinRes.data
   const streak = calculateStreak(streakRes.data ?? [], today)
+
+  // This week's avg calories (last 7 days, min 3 days logged)
+  const recentFoodLogs = tenDayFoodRes.data ?? []
+  const recentDayMap: Record<string, number> = {}
+  for (const l of recentFoodLogs) { recentDayMap[l.date] = (recentDayMap[l.date] ?? 0) + l.calories }
+  const recentLoggedDays = Object.keys(recentDayMap)
+  const avgCaloriesThisWeek = recentLoggedDays.length >= 3
+    ? Math.round(Object.values(recentDayMap).reduce((s, v) => s + v, 0) / recentLoggedDays.length)
+    : null
+
+  // 7v7 SMA: current week avg vs previous week avg
+  const sevenDaysAgoStr = getSevenDaysAgo()
+  const fourteenDaysAgoStr = getFourteenDaysAgo()
+  const currentWeekWeights = weightData.filter(w => w.date >= sevenDaysAgoStr)
+  const prevWeekWeights = weightData.filter(w => w.date >= fourteenDaysAgoStr && w.date < sevenDaysAgoStr)
+  const currentWeekAvg = currentWeekWeights.length > 0
+    ? currentWeekWeights.reduce((s, w) => s + w.weight_lbs, 0) / currentWeekWeights.length
+    : null
+  const prevWeekAvg = prevWeekWeights.length > 0
+    ? prevWeekWeights.reduce((s, w) => s + w.weight_lbs, 0) / prevWeekWeights.length
+    : null
+  const weightSMADelta = currentWeekAvg !== null && prevWeekAvg !== null
+    ? Number((currentWeekAvg - prevWeekAvg).toFixed(1))
+    : null
 
   // @ts-ignore
   const goalLabel = GOAL_LABELS[goals.mode] ?? 'Active'
@@ -61,16 +87,7 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* Sunday check-in prompt */}
-      {showCheckinPrompt && (
-        <Link href="/reports?checkin=1" className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3">
-          <div>
-            <p className="text-emerald-800 font-semibold text-sm">Weekly check-in ready</p>
-            <p className="text-emerald-600 text-xs mt-0.5">Complete it to generate your weekly report</p>
-          </div>
-          <span className="text-emerald-600 text-lg">→</span>
-        </Link>
-      )}
+      <SundayCheckinModal show={showCheckinPrompt} />
 
       {/* Quick actions — full width Log Food, then 3 secondary */}
       <div className="space-y-2.5">
@@ -102,6 +119,14 @@ export default async function HomePage() {
 
       {/* Weight chart */}
       <WeightChart data={weightData} />
+      {(avgCaloriesThisWeek !== null || weightSMADelta !== null) && (
+        <p className="text-neutral-400 text-xs px-1 -mt-2">
+          {avgCaloriesThisWeek !== null && `Averaging ${avgCaloriesThisWeek} kcal/day this week`}
+          {avgCaloriesThisWeek !== null && weightSMADelta !== null && ' — '}
+          {weightSMADelta !== null && `weekly weight avg ${weightSMADelta < 0 ? 'down' : weightSMADelta > 0 ? 'up' : 'stable'}${Math.abs(weightSMADelta) > 0 ? ` ${Math.abs(weightSMADelta)} lbs` : ''} vs last week`}
+          .
+        </p>
+      )}
 
       <SignOutButton />
     </div>
@@ -113,6 +138,12 @@ function getFourWeeksAgo(): string {
 }
 function getThirtyDaysAgo(): string {
   const d = new Date(); d.setDate(d.getDate() - 30); return d.toISOString().split('T')[0]
+}
+function getSevenDaysAgo(): string {
+  const d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString().split('T')[0]
+}
+function getFourteenDaysAgo(): string {
+  const d = new Date(); d.setDate(d.getDate() - 14); return d.toISOString().split('T')[0]
 }
 
 function calculateStreak(logs: { date: string }[], today: string): number {
