@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/push/send?meal=breakfast",
-      "schedule": "0 13 * * *"
+      "schedule": "0 14 * * *"
     },
     {
       "path": "/api/push/send?meal=lunch",
