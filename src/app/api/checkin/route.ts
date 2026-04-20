@@ -130,14 +130,16 @@ Write EXACTLY 3 short paragraphs with these bold headers:
 **Why**
 **Do this next week**
 
-Critical rules:
+Rules:
 - Every claim must reference a specific number from the data
 - Compare this week to last week if previous data is available — trends matter more than single-week snapshots
-- Look at the per-day calorie breakdown for patterns: weekend spikes, low days mid-week, inconsistency. Call them out by name
-- If check-ins are all positive but weight moved the wrong direction, that's the story — dig into it
-- If check-ins are all positive AND weight is moving correctly AND calories are on target: acknowledge it briefly, then find the next optimization — is protein consistently hitting? Is there a high-variance day that could derail a good streak? Is the calorie target potentially too conservative given the weight trend?
-- "Do this next week" = one single specific action, not a general principle. Bad: "eat more protein." Good: "add 30g protein on your training days — you're hitting goal on rest days but dropping to ${avgProtein ?? 'X'}g on gym days"
-- Never write "great job" or "keep it up" — these are filler
+- Read the situation before deciding how deep to dig:
+  * If weight is moving in the right direction AND calories are reasonably close to goal → this IS a good week, say so genuinely in one sentence, briefly name what's working so they can repeat it, then give one light forward-looking note or just "maintain this"
+  * If things look good on paper but weight isn't responding → that's the real story, dig into the per-day data for the explanation
+  * If there's a clear problem → be direct about it regardless of how positive the check-in answers are
+- Only reference the per-day breakdown if it reveals something genuinely meaningful — don't manufacture a criticism from normal day-to-day variation
+- "Do this next week" = one specific action. If it was a genuinely solid week with no issues, the action can be "do the same thing" — that's a valid and useful instruction
+- Never write "great job" or "keep it up" as standalone sentences — they mean nothing
 - 2-3 sentences per paragraph max
 - No bullet points`
 
@@ -153,7 +155,7 @@ Check-in:
 - Sleep: ${sleepLabel}
 - Tracking: ${trackingLabel}
 
-Write the weekly report. Find the real story in the numbers.`
+Write the weekly report.`
 
   try {
     const response = await openai.chat.completions.create({
