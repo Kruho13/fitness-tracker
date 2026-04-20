@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { calculateMacros, ACTIVITY_LABELS, GOAL_LABELS, GOAL_DESCRIPTIONS, type GoalMode, type ActivityLevel, type Gender } from '@/lib/calculations'
-import { Info } from 'lucide-react'
+import { Info, Bell, BellOff } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export default function GoalsPage() {
@@ -28,6 +28,8 @@ export default function GoalsPage() {
   const [loading, setLoading] = useState(false)
   const [saved, setSaved] = useState(false)
   const [fetching, setFetching] = useState(true)
+  const [notifEnabled, setNotifEnabled] = useState(false)
+  const [notifLoading, setNotifLoading] = useState(false)
 
   useEffect(() => {
     Promise.all([
