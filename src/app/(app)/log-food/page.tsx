@@ -101,7 +101,7 @@ export default function LogFoodPage() {
       })
       await fetch('/api/push/subscribe', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscription: sub, notify_hour: 20 }),
+        body: JSON.stringify({ subscription: sub }),
       })
       setPushEnabled(true)
       setShowPushPrompt(false)
@@ -369,8 +369,8 @@ export default function LogFoodPage() {
 
       {showPushPrompt && (
         <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-          <p className="text-emerald-900 font-semibold text-sm">Keep your streak going 🔥</p>
-          <p className="text-emerald-700 text-xs mt-1 mb-3">Get a daily reminder at 8pm if you haven&apos;t logged yet.</p>
+          <p className="text-emerald-900 font-semibold text-sm">Build the habit</p>
+          <p className="text-emerald-700 text-xs mt-1 mb-3">Get reminders at meal times — only on days you haven&apos;t logged yet.</p>
           <div className="flex gap-2">
             <button onClick={registerPush}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2 rounded-lg transition-colors">
