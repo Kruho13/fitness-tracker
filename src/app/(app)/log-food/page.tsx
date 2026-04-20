@@ -187,8 +187,8 @@ export default function LogFoodPage() {
       setLogs(prev => [data.log, ...prev])
       setInput(''); setBreakdown(null)
       navigator.vibrate?.(50)
-      // Show push prompt after first ever log
-      if (logs.length === 0 && !pushEnabled && Notification.permission === 'default') {
+      // Show push prompt after first log of the day
+      if (logs.length === 0 && !pushEnabled && Notification.permission === 'default' && !localStorage.getItem('push_dismissed')) {
         setShowPushPrompt(true)
       }
     } catch { setError('Failed to save.') }
@@ -370,13 +370,13 @@ export default function LogFoodPage() {
       {showPushPrompt && (
         <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
           <p className="text-emerald-900 font-semibold text-sm">Build the habit</p>
-          <p className="text-emerald-700 text-xs mt-1 mb-3">Get reminders at meal times — only on days you haven&apos;t logged yet.</p>
+          <p className="text-emerald-700 text-xs mt-1 mb-3">Get a nudge around meal times on days you forget to log.</p>
           <div className="flex gap-2">
             <button onClick={registerPush}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2 rounded-lg transition-colors">
               Turn on reminders
             </button>
-            <button onClick={() => setShowPushPrompt(false)}
+            <button onClick={() => { localStorage.setItem('push_dismissed', '1'); setShowPushPrompt(false) }}
               className="px-3 py-2 text-xs text-emerald-600 hover:text-emerald-700 font-medium">
               Not now
             </button>
