@@ -92,6 +92,11 @@ CREATE TABLE IF NOT EXISTS weekly_reports (
   weight_start DECIMAL(5,1),
   weight_end DECIMAL(5,1),
   days_logged INTEGER DEFAULT 0,
+  goal_calories INTEGER,
+  goal_protein INTEGER,
+  goal_carbs INTEGER,
+  goal_fats INTEGER,
+  goal_mode TEXT,
   generated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(user_id, week_start)
 );

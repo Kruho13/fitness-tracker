@@ -131,6 +131,7 @@ Write EXACTLY 3 short paragraphs with these bold headers:
 **Do this next week**
 
 Rules:
+- CRITICAL: Never state a goal number that isn't explicitly in the data provided. Use only the exact calorie and protein targets given — do not round, approximate, or invent them
 - Every claim must reference a specific number from the data
 - Compare this week to last week if previous data is available — trends matter more than single-week snapshots
 - Read the situation before deciding how deep to dig:
@@ -184,6 +185,11 @@ Write the weekly report.`
         weight_start: weightStart,
         weight_end: weightEnd,
         days_logged: uniqueDays,
+        goal_calories: goals?.calories ?? null,
+        goal_protein: goals?.protein ?? null,
+        goal_carbs: goals?.carbs ?? null,
+        goal_fats: goals?.fats ?? null,
+        goal_mode: goals?.mode ?? null,
         generated_at: new Date().toISOString(),
       }, { onConflict: 'user_id,week_start' })
       .select()
