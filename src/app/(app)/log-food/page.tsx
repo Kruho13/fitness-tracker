@@ -50,11 +50,13 @@ export default function LogFoodPage() {
 
   function getPushPromptCount() { return parseInt(localStorage.getItem('push_prompt_count') ?? '0') }
   function shouldShowPushPrompt(currentStreak: number) {
-    if (pushEnabled || Notification.permission !== 'default') return false
+    if (pushEnabled) return false
+    if (Notification.permission === 'granted') return false
+    if (Notification.permission === 'denied') return false
     const count = getPushPromptCount()
-    if (count === 0) return true
-    if (count === 1 && currentStreak >= 2) return true  // will be 3-day streak after this log
-    if (count === 2 && currentStreak >= 6) return true  // will be 7-day streak after this log
+    if (count <= 2) return true            // first 3 appearances: always show on first log of day
+    if (count === 3 && currentStreak >= 3) return true  // 3-day streak milestone
+    if (count === 4 && currentStreak >= 7) return true  // 7-day streak milestone
     return false
   }
   function dismissPushPrompt() {

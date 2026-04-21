@@ -2,15 +2,15 @@
   "crons": [
     {
       "path": "/api/push/send?meal=breakfast",
-      "schedule": "0 14 * * *"
+      "schedule": "0 13 * * *"
     },
     {
       "path": "/api/push/send?meal=lunch",
-      "schedule": "0 18 * * *"
+      "schedule": "0 17 * * *"
     },
     {
       "path": "/api/push/send?meal=dinner",
-      "schedule": "0 0 * * *"
+      "schedule": "0 23 * * *"
     }
   ]
 }
