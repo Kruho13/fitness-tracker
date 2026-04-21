@@ -48,20 +48,20 @@ export default function LogFoodPage() {
   const [pushEnabled, setPushEnabled] = useState(false)
   const [pushError, setPushError] = useState(false)
 
-  function getPushPromptCount() { return parseInt(localStorage.getItem('push_prompt_count') ?? '0') }
+  const PUSH_KEY = 'push_prompt_v2'
+  function getPushPromptCount() { return parseInt(localStorage.getItem(PUSH_KEY) ?? '0') }
   function shouldShowPushPrompt(currentStreak: number) {
     if (pushEnabled) return false
     if (Notification.permission === 'granted') return false
     if (Notification.permission === 'denied') return false
     const count = getPushPromptCount()
-    if (count <= 2) return true            // first 3 appearances: always show on first log of day
-    if (count === 3 && currentStreak >= 3) return true  // 3-day streak milestone
-    if (count === 4 && currentStreak >= 7) return true  // 7-day streak milestone
+    if (count <= 2) return true
+    if (count === 3 && currentStreak >= 3) return true
+    if (count === 4 && currentStreak >= 7) return true
     return false
   }
   function dismissPushPrompt() {
-    const count = getPushPromptCount()
-    localStorage.setItem('push_prompt_count', String(count + 1))
+    localStorage.setItem(PUSH_KEY, String(getPushPromptCount() + 1))
     setShowPushPrompt(false)
   }
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
@@ -140,7 +140,7 @@ export default function LogFoodPage() {
       })
       if (res.ok) {
         setPushEnabled(true)
-        localStorage.setItem('push_prompt_count', '3') // max out counter so no more prompts
+        localStorage.setItem(PUSH_KEY, '5') // max out counter so no more prompts
       } else throw new Error('Subscribe API failed')
     } catch (err) {
       console.error('Push registration failed:', err)
