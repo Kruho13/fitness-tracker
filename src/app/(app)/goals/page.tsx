@@ -9,6 +9,7 @@ export default function GoalsPage() {
 
 
   // Profile state
+  const [name, setName] = useState('')
   const [gender, setGender] = useState<Gender>('male')
   const [age, setAge] = useState(25)
   const [weightLbs, setWeightLbs] = useState(175)
@@ -47,6 +48,7 @@ export default function GoalsPage() {
         setFats(savedGoals.fats)
       }
       if (p) {
+        if (p.name) setName(p.name)
         setGender(p.gender)
         setAge(p.age)
         setWeightLbs(p.weight_lbs)
@@ -101,7 +103,7 @@ export default function GoalsPage() {
         fetch('/api/profile', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ gender, age, weight_lbs: weightLbs, height_cm: heightCm, activity_level: activity }),
+          body: JSON.stringify({ name, gender, age, weight_lbs: weightLbs, height_cm: heightCm, activity_level: activity }),
         }),
       ])
       setSaved(true)
@@ -123,6 +125,18 @@ export default function GoalsPage() {
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
+        {/* Name */}
+        <section className="space-y-2">
+          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Your name</p>
+          <input
+            type="text"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="First name"
+            className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-3 text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none focus:border-emerald-500 transition-colors"
+          />
+        </section>
+
         {/* Goal mode */}
         <section className="space-y-2">
           <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Goal</p>

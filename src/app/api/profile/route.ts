@@ -17,11 +17,11 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
-  const { gender, age, weight_lbs, height_cm, activity_level } = body
+  const { name, gender, age, weight_lbs, height_cm, activity_level } = body
 
   const { data, error } = await supabase
     .from('user_profiles')
-    .upsert({ user_id: user.id, gender, age, weight_lbs, height_cm, activity_level, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+    .upsert({ user_id: user.id, name, gender, age, weight_lbs, height_cm, activity_level, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
     .select().single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
