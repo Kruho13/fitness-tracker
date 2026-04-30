@@ -33,6 +33,41 @@ export default function GoalsPage() {
   const [notifLoading, setNotifLoading] = useState(false)
 
   useEffect(() => {
+    if ('Notification' in window) {
+      setNotifEnabled(Notification.permission === 'granted')
+    }
+  }, [])
+
+  async function handleNotifToggle() {
+    if (notifEnabled) {
+      setNotifLoading(true)
+      await fetch('/api/push/subscribe', { method: 'DELETE' })
+      setNotifEnabled(false)
+      setNotifLoading(false)
+    } else {
+      if (Notification.permission === 'denied') return
+      setNotifLoading(true)
+      try {
+        const reg = await navigator.serviceWorker.register('/sw.js')
+        const permission = await Notification.requestPermission()
+        if (permission !== 'granted') { setNotifLoading(false); return }
+        const existing = await reg.pushManager.getSubscription()
+        const sub = existing ?? await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+        })
+        await fetch('/api/push/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription: sub }),
+        })
+        setNotifEnabled(true)
+      } catch { /* ignore */ }
+      setNotifLoading(false)
+    }
+  }
+
+  useEffect(() => {
     Promise.all([
       fetch('/api/goals').then(r => r.json()),
       fetch('/api/profile').then(r => r.json()),
@@ -199,6 +234,33 @@ export default function GoalsPage() {
               </div>
             ))}
           </div>
+        </section>
+
+        {/* Notification toggle */}
+        <section className="bg-white border border-neutral-200 rounded-2xl px-4 py-4">
+          {'Notification' in window && Notification.permission === 'denied' ? (
+            <div className="flex items-center gap-3">
+              <BellOff size={18} className="text-neutral-400 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-neutral-700">Meal reminders blocked</p>
+                <p className="text-xs text-neutral-400 mt-0.5">Enable notifications in your browser settings to turn this on</p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                {notifEnabled ? <Bell size={18} className="text-emerald-600 shrink-0" /> : <BellOff size={18} className="text-neutral-400 shrink-0" />}
+                <div>
+                  <p className="text-sm font-semibold text-neutral-700">Meal reminders</p>
+                  <p className="text-xs text-neutral-400 mt-0.5">{notifEnabled ? 'You\'ll be nudged when you haven\'t logged yet' : 'Get nudged around meal times'}</p>
+                </div>
+              </div>
+              <button type="button" onClick={handleNotifToggle} disabled={notifLoading}
+                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${notifEnabled ? 'bg-emerald-500' : 'bg-neutral-200'} disabled:opacity-50`}>
+                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${notifEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+              </button>
+            </div>
+          )}
         </section>
 
         <button type="submit" disabled={loading}

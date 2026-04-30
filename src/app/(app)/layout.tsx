@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import BottomNav from '@/components/ui/BottomNav'
+import PushAutoSubscribe from '@/components/ui/PushAutoSubscribe'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -17,6 +18,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-neutral-50">
+      <PushAutoSubscribe />
       <main className="pb-20 max-w-lg mx-auto">
         {children}
       </main>
