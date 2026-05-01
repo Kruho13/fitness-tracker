@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { createClient } from '@/lib/supabase/server'
 import { currentWeekStartCT, currentWeekEndCT } from '@/lib/utils'
+import { calculateMacros, type Gender, type ActivityLevel, type GoalMode } from '@/lib/calculations'
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
@@ -29,7 +30,10 @@ export async function POST(req: NextRequest) {
     .gte('date', weekStart)
     .lte('date', weekEnd)
 
-  const { data: goals } = await supabase.from('goals').select('*').eq('user_id', user.id).single()
+  const [{ data: goals }, { data: profile }] = await Promise.all([
+    supabase.from('goals').select('*').eq('user_id', user.id).single(),
+    supabase.from('user_profiles').select('gender,weight_lbs,height_cm,age,activity_level').eq('user_id', user.id).single(),
+  ])
 
   // Get weight at start and end of week
   const { data: weightLogs } = await supabase
@@ -101,6 +105,34 @@ export async function POST(req: NextRequest) {
     prevReport.weight_end !== null ? `- Previous week ending weight: ${prevReport.weight_end} lbs` : '',
   ].filter(Boolean).join('\n') : null
 
+  // TDEE and actual deficit/surplus
+  let tdee: number | null = null
+  if (profile) {
+    tdee = calculateMacros(
+      profile.gender as Gender,
+      profile.weight_lbs,
+      profile.height_cm,
+      profile.age,
+      profile.activity_level as ActivityLevel,
+      (goals?.mode ?? 'maintain') as GoalMode
+    ).tdee
+  }
+  const actualDeficitSurplus = tdee && avgCalories !== null ? tdee - avgCalories : null
+
+  // Stall detection: compare first-half vs second-half of 4-week weight trend
+  let stallNote = ''
+  if (goals?.mode && goals.mode !== 'maintain' && trendWeights.length >= 4 && uniqueDays >= 3) {
+    const mid = Math.floor(trendWeights.length / 2)
+    const firstAvg = trendWeights.slice(0, mid).reduce((s, w) => s + w.weight_lbs, 0) / mid
+    const secondAvg = trendWeights.slice(mid).reduce((s, w) => s + w.weight_lbs, 0) / (trendWeights.length - mid)
+    const trendDelta = secondAvg - firstAvg
+    if ((goals.mode === 'cut' || goals.mode === 'cut_aggressive') && trendDelta > -0.3) {
+      stallNote = 'weight trend is flat or rising despite being in a cut — user may be stalling'
+    } else if (goals.mode === 'lean_bulk' && trendDelta < 0.2) {
+      stallNote = 'weight trend is flat or dropping despite being in a bulk — user may be stalling'
+    }
+  }
+
   const strengthLabel = strength === 'up' ? 'increased' : strength === 'down' ? 'decreased' : 'stayed the same'
   const gymLabel = gym_consistency === 'consistent' ? 'consistent' : gym_consistency === 'missed_some' ? 'missed some days' : 'mostly skipped'
   const sleepLabel = sleep === 'good' ? 'good' : sleep === 'alright' ? 'alright' : 'poor'
@@ -108,9 +140,12 @@ export async function POST(req: NextRequest) {
 
   const dataSection = [
     `- Goal mode: ${goals?.mode ?? 'maintain'}`,
+    tdee ? `- Maintenance calories (TDEE): ${tdee} kcal/day` : '',
     `- Calorie goal: ${goals?.calories ?? 'N/A'} kcal/day`,
     `- Protein goal: ${goals?.protein ?? 'N/A'}g/day`,
     avgCalories !== null ? `- Avg daily calories this week: ${avgCalories} kcal` : '- Calories: insufficient data',
+    actualDeficitSurplus !== null ? `- Actual deficit/surplus vs maintenance: ${actualDeficitSurplus > 0 ? '-' : '+'}${Math.abs(actualDeficitSurplus)} kcal/day (${actualDeficitSurplus > 0 ? 'deficit' : 'surplus'})` : '',
+    stallNote ? `- STALL ALERT: ${stallNote}` : '',
     calMin !== null && calMax !== null ? `- Calorie range this week: ${calMin}–${calMax} kcal (shows consistency or volatility)` : '',
     avgProtein !== null ? `- Avg daily protein: ${avgProtein}g` : '',
     avgCarbs !== null ? `- Avg daily carbs: ${avgCarbs}g` : '',
@@ -121,18 +156,18 @@ export async function POST(req: NextRequest) {
     weightTrendSummary ? `- 4-week weight trend: ${weightTrendSummary}` : '',
   ].filter(Boolean).join('\n')
 
-  const systemPrompt = `You are a direct fitness coach. Write a weekly report for an intermediate lifter in 3 short paragraphs, each with a bold header.
+  const systemPrompt = `You are a direct, no-fluff fitness coach. Write a weekly report for an intermediate lifter. Use bold headers for 3 short sections.
 
 **What happened**
-2 sentences max. State what the numbers show. Use exact figures from the data only — never round or invent goal numbers.
+2 sentences max. Use exact numbers — avg calories logged, actual deficit or surplus vs maintenance (TDEE), and weight change. Compare calories to TDEE, not just the calorie goal.
 
 **Why**
-2 sentences max. Connect the check-in answers to the outcome. If everything aligns, say so plainly.
+2 sentences max. Connect the check-in responses (strength, gym, sleep, tracking) directly to the outcome. If a STALL ALERT is present, name the likely cause plainly — don't soften it.
 
-**Do this next week**
-1 sentence. One specific action. If it was a solid week, "same approach" is a valid instruction.
+**Adjust next week**
+1–2 sentences. Be specific and numeric. If a STALL ALERT is present: suggest a concrete change — e.g. reduce daily calories by 150–200 kcal, shift carbs around training, or add a deficit day. If on track: "hold the approach" is valid. Never give more than one adjustment. If tracking days < 4, make that the priority before any macro change.
 
-Rules: no bullet points, no praise padding, only reference per-day data if it explains something the averages don't.`
+Rules: no bullet points, no praise padding. Use exact figures from the data. Do not reference the STALL ALERT label directly in your output — just act on it.`
 
   const userMessage = `Week: ${weekStart} to ${weekEnd}
 
