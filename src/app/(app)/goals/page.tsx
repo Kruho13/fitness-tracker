@@ -48,9 +48,9 @@ export default function GoalsPage() {
       if (Notification.permission === 'denied') return
       setNotifLoading(true)
       try {
-        const reg = await navigator.serviceWorker.register('/sw.js')
         const permission = await Notification.requestPermission()
         if (permission !== 'granted') { setNotifLoading(false); return }
+        const reg = await navigator.serviceWorker.register('/sw.js')
         const existing = await reg.pushManager.getSubscription()
         const sub = existing ?? await reg.pushManager.subscribe({
           userVisibleOnly: true,

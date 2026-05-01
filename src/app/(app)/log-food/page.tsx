@@ -111,9 +111,9 @@ export default function LogFoodPage() {
     setShowPushPrompt(false)
     setPushError(false)
     try {
-      const reg = await navigator.serviceWorker.register('/sw.js')
       const permission = await Notification.requestPermission()
       if (permission !== 'granted') return
+      const reg = await navigator.serviceWorker.register('/sw.js')
       const existing = await reg.pushManager.getSubscription()
       const sub = existing ?? await reg.pushManager.subscribe({
         userVisibleOnly: true,
