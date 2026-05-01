@@ -245,13 +245,7 @@ export default function GoalsPage() {
         </section>
 
         {/* Notification toggle */}
-        <p className="text-xs text-neutral-400 text-center">
-          permission: {'Notification' in window ? Notification.permission : 'unsupported'}
-          {' · toggle: '}{notifEnabled ? 'on' : 'off'}
-          {' · key: '}{process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ? 'set' : 'MISSING'}
-          {notifError ? ` · error: ${notifError}` : ''}
-        </p>
-        <section className="bg-white border border-neutral-200 rounded-2xl px-4 py-4">
+<section className="bg-white border border-neutral-200 rounded-2xl px-4 py-4">
           {'Notification' in window && Notification.permission === 'denied' ? (
             <div className="flex items-center gap-3">
               <BellOff size={18} className="text-neutral-400 shrink-0" />
@@ -269,6 +263,7 @@ export default function GoalsPage() {
                   <p className="text-xs text-neutral-400 mt-0.5">{notifEnabled ? 'You\'ll be nudged when you haven\'t logged yet' : 'Get nudged around meal times'}</p>
                 </div>
               </div>
+              {notifError && <p className="text-xs text-red-500">{notifError}</p>}
               <button type="button" onClick={handleNotifToggle} disabled={notifLoading}
                 className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${notifEnabled ? 'bg-emerald-500' : 'bg-neutral-200'} disabled:opacity-50`}>
                 <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${notifEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
