@@ -243,7 +243,9 @@ export default function GoalsPage() {
 
         {/* Notification toggle */}
         <p className="text-xs text-neutral-400 text-center">
-          permission: {'Notification' in window ? Notification.permission : 'not supported'}
+          permission: {'Notification' in window ? Notification.permission : 'unsupported'}
+          {' · toggle: '}{notifEnabled ? 'on' : 'off'}
+          {' · key: '}{process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ? 'set' : 'MISSING'}
           {notifError ? ` · error: ${notifError}` : ''}
         </p>
         <section className="bg-white border border-neutral-200 rounded-2xl px-4 py-4">
