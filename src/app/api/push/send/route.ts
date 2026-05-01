@@ -1,24 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import webpush from 'web-push'
 import { createClient as createServerClient } from '@supabase/supabase-js'
-import { todayCT } from '@/lib/utils'
 
 const MEAL_CONFIG = {
-  breakfast: {
-    body: "Morning — log breakfast to start your day on track.",
-    // notify if fewer than 1 log today
-    threshold: 1,
-  },
-  lunch: {
-    body: "Lunch time — log what you ate to stay on track.",
-    // notify if fewer than 1 log today (haven't logged breakfast)
-    threshold: 1,
-  },
-  dinner: {
-    body: "Dinner time — log your last meal and close out your day.",
-    // notify if fewer than 2 logs today (haven't logged both earlier meals)
-    threshold: 2,
-  },
+  breakfast: { body: "Morning — log breakfast to start your day on track." },
+  lunch:     { body: "Lunch time — log what you ate to stay on track." },
+  dinner:    { body: "Dinner time — log your last meal and close out your day." },
 } as const
 
 type Meal = keyof typeof MEAL_CONFIG
@@ -47,29 +34,13 @@ export async function GET(req: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  const today = todayCT()
-
   const { data: subscriptions } = await supabase
     .from('push_subscriptions')
     .select('user_id, subscription')
 
-  if (!subscriptions?.length) return NextResponse.json({ sent: 0 })
+  if (!subscriptions?.length) return NextResponse.json({ sent: 0, skipped: 0 })
 
-  // Count today's logs per user
-  const userIds = subscriptions.map(s => s.user_id)
-  const { data: todayLogs } = await supabase
-    .from('food_logs')
-    .select('user_id')
-    .eq('date', today)
-    .in('user_id', userIds)
-
-  const logCountMap: Record<string, number> = {}
-  for (const l of todayLogs ?? []) {
-    logCountMap[l.user_id] = (logCountMap[l.user_id] ?? 0) + 1
-  }
-
-  // Only notify users below the threshold for this meal
-  const toNotify = subscriptions.filter(s => (logCountMap[s.user_id] ?? 0) < config.threshold)
+  const toNotify = subscriptions
 
   let sent = 0
   const stale: string[] = []
