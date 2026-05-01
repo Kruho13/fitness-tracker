@@ -237,6 +237,9 @@ export default function GoalsPage() {
         </section>
 
         {/* Notification toggle */}
+        <p className="text-xs text-neutral-400 text-center">
+          permission: {'Notification' in window ? Notification.permission : 'not supported'}
+        </p>
         <section className="bg-white border border-neutral-200 rounded-2xl px-4 py-4">
           {'Notification' in window && Notification.permission === 'denied' ? (
             <div className="flex items-center gap-3">
