@@ -63,7 +63,10 @@ export default function GoalsPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ subscription: sub }),
         })
-        if (!res.ok) throw new Error(`API error ${res.status}`)
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}))
+          throw new Error(body.error ?? `API error ${res.status}`)
+        }
         setNotifEnabled(true)
       } catch (e: any) {
         setNotifError(e?.message ?? 'Unknown error')
