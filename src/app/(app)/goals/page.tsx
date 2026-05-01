@@ -31,6 +31,7 @@ export default function GoalsPage() {
   const [fetching, setFetching] = useState(true)
   const [notifEnabled, setNotifEnabled] = useState(false)
   const [notifLoading, setNotifLoading] = useState(false)
+  const [notifError, setNotifError] = useState('')
 
   useEffect(() => {
     if ('Notification' in window) {
@@ -48,6 +49,7 @@ export default function GoalsPage() {
       if (Notification.permission === 'denied') return
       setNotifLoading(true)
       try {
+        setNotifError('')
         const permission = await Notification.requestPermission()
         if (permission !== 'granted') { setNotifLoading(false); return }
         const reg = await navigator.serviceWorker.register('/sw.js')
@@ -56,13 +58,16 @@ export default function GoalsPage() {
           userVisibleOnly: true,
           applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
         })
-        await fetch('/api/push/subscribe', {
+        const res = await fetch('/api/push/subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ subscription: sub }),
         })
+        if (!res.ok) throw new Error(`API error ${res.status}`)
         setNotifEnabled(true)
-      } catch { /* ignore */ }
+      } catch (e: any) {
+        setNotifError(e?.message ?? 'Unknown error')
+      }
       setNotifLoading(false)
     }
   }
@@ -239,6 +244,7 @@ export default function GoalsPage() {
         {/* Notification toggle */}
         <p className="text-xs text-neutral-400 text-center">
           permission: {'Notification' in window ? Notification.permission : 'not supported'}
+          {notifError ? ` · error: ${notifError}` : ''}
         </p>
         <section className="bg-white border border-neutral-200 rounded-2xl px-4 py-4">
           {'Notification' in window && Notification.permission === 'denied' ? (
