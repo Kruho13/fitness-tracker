@@ -25,6 +25,11 @@ export default function ReportsPage() {
   const [generating, setGenerating] = useState(false)
   const [newReportId, setNewReportId] = useState<string | null>(null)
   const [goals, setGoals] = useState<{ calories: number; protein: number; carbs: number; fats: number } | null>(null)
+  const [adjustment, setAdjustment] = useState<{
+    weight_was: number; weight_now: number
+    old_tdee: number | null; new_tdee: number
+    old_calories: number; new_calories: number
+  } | null>(null)
 
   const [strength, setStrength] = useState<Strength>('same')
   const [gym, setGym] = useState<GymConsistency>('consistent')
@@ -57,6 +62,7 @@ export default function ReportsPage() {
       const data = await res.json()
       if (data.report) {
         setNewReportId(data.report.id)
+        if (data.adjustment) setAdjustment(data.adjustment)
         setShowCheckin(false)
         await fetchReports()
         setExpanded(data.report.id)
@@ -90,6 +96,16 @@ export default function ReportsPage() {
         <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
           <p className="text-emerald-800 font-semibold text-sm">✓ Weekly report generated</p>
           <p className="text-emerald-600 text-xs mt-0.5">Your new report is at the top below.</p>
+        </div>
+      )}
+      {adjustment && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+          <p className="text-blue-800 font-semibold text-sm">Goals updated automatically</p>
+          <p className="text-blue-600 text-xs mt-1">
+            You&apos;re {Math.abs(adjustment.weight_now - adjustment.weight_was).toFixed(1)} lbs {adjustment.weight_now < adjustment.weight_was ? 'lighter' : 'heavier'} than when you last set your goals.
+            {adjustment.old_tdee ? ` Your maintenance dropped from ${adjustment.old_tdee} → ${adjustment.new_tdee} kcal.` : ''}
+            {' '}New calorie target: <strong>{adjustment.new_calories} kcal/day</strong> (was {adjustment.old_calories}).
+          </p>
         </div>
       )}
 

@@ -30,9 +30,10 @@ export async function POST(req: NextRequest) {
     .gte('date', weekStart)
     .lte('date', weekEnd)
 
-  const [{ data: goals }, { data: profile }] = await Promise.all([
+  const [{ data: goals }, { data: profile }, { data: latestWeightData }] = await Promise.all([
     supabase.from('goals').select('*').eq('user_id', user.id).single(),
     supabase.from('user_profiles').select('gender,weight_lbs,height_cm,age,activity_level').eq('user_id', user.id).single(),
+    supabase.from('weight_logs').select('weight_lbs').eq('user_id', user.id).order('date', { ascending: false }).limit(1).single(),
   ])
 
   // Get weight at start and end of week
@@ -221,7 +222,39 @@ Write the weekly report.`
       .single()
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json({ report })
+
+    // Auto-adjust goals if logged weight has shifted 3+ lbs from profile weight
+    let adjustment = null
+    const latestWeight = latestWeightData?.weight_lbs ?? null
+    if (profile && goals && latestWeight && Math.abs(latestWeight - profile.weight_lbs) >= 3) {
+      const newMacros = calculateMacros(
+        profile.gender as Gender,
+        latestWeight,
+        profile.height_cm,
+        profile.age,
+        profile.activity_level as ActivityLevel,
+        goals.mode as GoalMode
+      )
+      await Promise.all([
+        supabase.from('goals').update({
+          calories: newMacros.calories,
+          protein: newMacros.protein,
+          carbs: newMacros.carbs,
+          fats: newMacros.fats,
+        }).eq('user_id', user.id),
+        supabase.from('user_profiles').update({ weight_lbs: latestWeight }).eq('user_id', user.id),
+      ])
+      adjustment = {
+        weight_was: profile.weight_lbs,
+        weight_now: latestWeight,
+        old_tdee: tdee,
+        new_tdee: newMacros.tdee,
+        old_calories: goals.calories,
+        new_calories: newMacros.calories,
+      }
+    }
+
+    return NextResponse.json({ report, adjustment })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }

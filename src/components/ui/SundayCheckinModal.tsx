@@ -16,6 +16,11 @@ export default function SundayCheckinModal({ show }: { show: boolean }) {
   const [tracking, setTracking] = useState<TrackingQuality>('tracked_everything')
   const [generating, setGenerating] = useState(false)
   const [report, setReport] = useState<string | null>(null)
+  const [adjustment, setAdjustment] = useState<{
+    weight_was: number; weight_now: number
+    old_tdee: number | null; new_tdee: number
+    old_calories: number; new_calories: number
+  } | null>(null)
 
   if (!open) return null
 
@@ -30,6 +35,7 @@ export default function SundayCheckinModal({ show }: { show: boolean }) {
       })
       const data = await res.json()
       if (data.report?.report_text) setReport(data.report.report_text)
+      if (data.adjustment) setAdjustment(data.adjustment)
     } finally {
       setGenerating(false)
     }
@@ -55,6 +61,16 @@ export default function SundayCheckinModal({ show }: { show: boolean }) {
               <p className="text-neutral-400 text-sm">Find it anytime in the Reports tab</p>
             </div>
             <div className="space-y-3">{renderReport(report)}</div>
+            {adjustment && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+                <p className="text-blue-800 font-semibold text-sm">Goals updated automatically</p>
+                <p className="text-blue-600 text-xs mt-1">
+                  You&apos;re {Math.abs(adjustment.weight_now - adjustment.weight_was).toFixed(1)} lbs {adjustment.weight_now < adjustment.weight_was ? 'lighter' : 'heavier'} than when you last set your goals.
+                  {adjustment.old_tdee ? ` Your maintenance dropped from ${adjustment.old_tdee} → ${adjustment.new_tdee} kcal.` : ''}
+                  {' '}New calorie target: <strong>{adjustment.new_calories} kcal/day</strong> (was {adjustment.old_calories}).
+                </p>
+              </div>
+            )}
             <button onClick={() => setOpen(false)}
               className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3.5 rounded-2xl text-sm transition-colors">
               Got it
