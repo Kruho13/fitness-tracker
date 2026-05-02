@@ -166,7 +166,7 @@ export async function POST(req: NextRequest) {
 2 sentences max. Connect the check-in responses (strength, gym, sleep, tracking) directly to the outcome. If a STALL ALERT is present, name the likely cause plainly — don't soften it.
 
 **Adjust next week**
-1–2 sentences. Be specific and numeric. If a STALL ALERT is present: suggest a concrete change — e.g. reduce daily calories by 150–200 kcal, shift carbs around training, or add a deficit day. If on track: "hold the approach" is valid. Never give more than one adjustment. If tracking days < 4, make that the priority before any macro change.
+1–2 sentences. Be specific and numeric. If a STALL ALERT is present: default is to reduce daily calories by 150–200 kcal. Only recommend a 1–2 week diet break at maintenance instead if at least two of these are true: strength is dropping, sleep is poor, goal mode is cut_aggressive, or the 4-week trend shows a stall the entire period. If on track: "hold the approach" is valid. Never give more than one adjustment. If tracking days < 4, make that the priority before any macro change.
 
 Rules: no bullet points, no praise padding. Use exact figures from the data. Do not reference the STALL ALERT label directly in your output — just act on it.`
 
