@@ -88,11 +88,11 @@ Respond ONLY in this exact JSON format:
         { role: 'user', content: userContent },
       ],
       response_format: { type: 'json_object' },
-      max_tokens: 400,
+      max_tokens: 600,
       temperature: 0.2,
     })
 
-    const parsed = JSON.parse(response.choices[0].message.content ?? '{}')
+    const parsed = JSON.parse(response.choices[0].message.content || '{}')
     return NextResponse.json({ breakdown: parsed })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
