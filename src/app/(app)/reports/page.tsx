@@ -79,18 +79,29 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="px-4 pt-6 pb-4 space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Reports</h1>
-          <p className="text-neutral-400 text-sm mt-0.5">Weekly insights</p>
+    <div>
+      <div
+        className="px-5 pt-8 pb-6"
+        style={{ background: 'linear-gradient(160deg, #111110 0%, #1C1C1A 100%)' }}
+      >
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-neutral-500 text-xs font-semibold uppercase tracking-widest mb-1">Coaching</p>
+            <p className="text-white font-bold text-2xl leading-tight" style={{ fontFamily: 'var(--font-bricolage)' }}>
+              Reports
+            </p>
+            <p className="text-neutral-500 text-sm mt-1">Weekly insights</p>
+          </div>
+          <button onClick={() => setShowCheckin(v => !v)}
+            className="flex items-center gap-2 text-white text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-colors mt-1"
+            style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.12)' }}>
+            <ClipboardCheck size={15} />
+            Check-in
+          </button>
         </div>
-        <button onClick={() => setShowCheckin(v => !v)}
-          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-colors">
-          <ClipboardCheck size={15} />
-          Check-in
-        </button>
       </div>
+
+      <div className="px-4 pt-4 pb-4 space-y-3">
 
       {newReportId && (
         <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
@@ -111,7 +122,7 @@ export default function ReportsPage() {
 
       {/* Check-in form */}
       {showCheckin && (
-        <div className="bg-white border border-neutral-200 rounded-2xl p-5 space-y-5">
+        <div className="bg-white rounded-2xl p-5 space-y-5" style={{ boxShadow: 'var(--card-shadow)' }}>
           <div>
             <h2 className="text-neutral-900 font-bold">Weekly check-in</h2>
             <p className="text-neutral-400 text-xs mt-1">4 questions — generates your personalized report</p>
@@ -138,7 +149,11 @@ export default function ReportsPage() {
               { value: 'didnt_track', label: "Didn't really track" },
             ]} value={tracking} onChange={v => setTracking(v as TrackingQuality)} />
             <button type="submit" disabled={generating}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-semibold py-3.5 rounded-xl text-sm transition-colors">
+              className="w-full text-white font-semibold py-3.5 rounded-xl text-sm transition-all active:scale-[0.98] disabled:opacity-40"
+              style={{
+                background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
+                boxShadow: generating ? 'none' : '0 4px 20px rgba(5,150,105,0.3)',
+              }}>
               {generating ? 'Generating report...' : 'Generate weekly report'}
             </button>
           </form>
@@ -147,7 +162,7 @@ export default function ReportsPage() {
 
       {reports.length === 0 && !showCheckin && (
         <div className="space-y-3">
-          <div className="bg-white border border-neutral-200 rounded-2xl p-5 space-y-3">
+          <div className="bg-white rounded-2xl p-5 space-y-3" style={{ boxShadow: 'var(--card-shadow)' }}>
             <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">What your weekly report looks like</p>
             <div className="space-y-3 opacity-60 pointer-events-none select-none">
               <div>
@@ -165,7 +180,8 @@ export default function ReportsPage() {
             </div>
           </div>
           <button onClick={() => setShowCheckin(true)}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3.5 rounded-2xl text-sm transition-colors">
+            className="w-full text-white font-semibold py-3.5 rounded-2xl text-sm transition-all active:scale-[0.98]"
+            style={{ background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)', boxShadow: '0 4px 20px rgba(5,150,105,0.3)' }}>
             Complete your first check-in
           </button>
         </div>
@@ -179,7 +195,7 @@ export default function ReportsPage() {
           const isNew = report.id === newReportId
 
           return (
-            <div key={report.id} className={`bg-white rounded-2xl overflow-hidden border ${isNew ? 'border-emerald-300' : 'border-neutral-200'}`}>
+            <div key={report.id} className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: isNew ? '0 0 0 1.5px #34D399, var(--card-shadow)' : 'var(--card-shadow)' }}>
               <button onClick={() => setExpanded(isExpanded ? null : report.id)}
                 className="w-full p-4 flex items-center justify-between gap-3 text-left hover:bg-neutral-50 transition-colors">
                 <div>
@@ -235,6 +251,7 @@ export default function ReportsPage() {
         })}
       </div>
     </div>
+  </div>
   )
 }
 

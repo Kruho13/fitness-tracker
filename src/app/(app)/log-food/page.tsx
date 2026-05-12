@@ -371,43 +371,55 @@ export default function LogFoodPage() {
   const proteinRemaining = proteinGoal !== null ? Math.max(0, proteinGoal - totals.protein) : null
 
   return (
-    <div className="px-4 pt-6 pb-4 space-y-5">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Log Food</h1>
-          <div className="flex items-center gap-1 mt-0.5">
-            <button onClick={() => setViewDate(getYesterday(today))} disabled={viewDate !== today}
-              className="p-0.5 rounded text-neutral-400 hover:text-neutral-600 disabled:opacity-30 transition-colors">
-              <ChevronLeft size={15} />
-            </button>
-            <p className="text-neutral-400 text-sm">
-              {viewDate === today ? 'Today' : 'Yesterday'}, {formatDate(viewDate)}
+    <div>
+      <div
+        className="px-5 pt-8 pb-6"
+        style={{ background: 'linear-gradient(160deg, #111110 0%, #1C1C1A 100%)' }}
+      >
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-1 mb-1">
+              <button onClick={() => setViewDate(getYesterday(today))} disabled={viewDate !== today}
+                className="p-0.5 text-neutral-600 disabled:opacity-30 transition-colors">
+                <ChevronLeft size={13} />
+              </button>
+              <p className="text-neutral-500 text-xs font-semibold uppercase tracking-widest">
+                {viewDate === today ? 'Today' : 'Yesterday'}
+              </p>
+              <button onClick={() => setViewDate(today)} disabled={viewDate === today}
+                className="p-0.5 text-neutral-600 disabled:opacity-30 transition-colors">
+                <ChevronRight size={13} />
+              </button>
+            </div>
+            <p className="text-white font-bold text-2xl leading-tight" style={{ fontFamily: 'var(--font-bricolage)' }}>
+              {formatDate(viewDate)}
             </p>
-            <button onClick={() => setViewDate(today)} disabled={viewDate === today}
-              className="p-0.5 rounded text-neutral-400 hover:text-neutral-600 disabled:opacity-30 transition-colors">
-              <ChevronRight size={15} />
-            </button>
+          </div>
+          <div className="flex flex-col items-end gap-2 mt-0.5">
+            {caloriesRemaining !== null && (
+              <span
+                className="text-xs font-semibold px-3 py-1.5 rounded-full"
+                style={{
+                  background: overBudget ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)',
+                  color: overBudget ? '#F87171' : '#34D399',
+                  border: `1px solid ${overBudget ? 'rgba(239,68,68,0.2)' : 'rgba(52,211,153,0.2)'}`,
+                }}
+              >
+                {overBudget ? `${Math.abs(caloriesRemaining)} kcal over` : `${caloriesRemaining} kcal left`}
+              </span>
+            )}
+            {streak > 0 && (
+              <div className="flex items-center gap-1.5">
+                <Flame size={13} className="text-orange-400" />
+                <span className="text-sm font-bold text-orange-400">{streak}</span>
+                <span className="text-xs text-neutral-500">day streak</span>
+              </div>
+            )}
           </div>
         </div>
-        <div className="text-right flex flex-col items-end gap-1.5">
-          {caloriesRemaining !== null && (
-            <div className={`text-sm font-bold ${overBudget ? 'text-red-500' : 'text-emerald-600'}`}>
-              {overBudget ? `${Math.abs(caloriesRemaining)} kcal over` : `${caloriesRemaining} kcal left`}
-            </div>
-          )}
-          {proteinRemaining !== null && (
-            <div className={`text-xs font-semibold ${proteinRemaining === 0 ? 'text-blue-400' : 'text-blue-600'}`}>
-              {proteinRemaining === 0 ? '✓ Protein hit' : `${proteinRemaining}g protein left`}
-            </div>
-          )}
-          {streak > 0 && (
-            <div className="flex items-center gap-1">
-              <Flame size={13} className="text-orange-400" />
-              <span className="text-xs font-semibold text-neutral-500">{streak} day streak</span>
-            </div>
-          )}
-        </div>
       </div>
+
+      <div className="px-4 pt-4 pb-4 space-y-4">
 
       {viewDate !== today && (
         <button onClick={() => setViewDate(today)}
@@ -446,7 +458,7 @@ export default function LogFoodPage() {
 
       {/* Saved meals */}
       {savedMeals.length > 0 && (
-        <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden">
+        <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: 'var(--card-shadow)' }}>
           <button onClick={() => setShowSaved(v => !v)}
             className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors">
             <span className="flex items-center gap-2">
@@ -570,7 +582,7 @@ export default function LogFoodPage() {
         <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoSelect} className="hidden" />
 
         {showPhotoDesc && !photoPreview && (
-          <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-4 space-y-3">
+          <div className="bg-white rounded-2xl p-4 space-y-3" style={{ boxShadow: 'var(--card-shadow)' }}>
             <div>
               <p className="text-sm font-semibold text-neutral-800">What are you photographing?</p>
               <p className="text-neutral-400 text-xs mt-0.5">Helps the AI identify portions and items it might miss in the photo</p>
@@ -708,7 +720,7 @@ export default function LogFoodPage() {
 
       {/* Today's macro progress */}
       {logs.length > 0 && calorieGoal && (
-        <div className="bg-white border border-neutral-200 rounded-2xl p-4">
+        <div className="bg-white rounded-2xl p-4" style={{ boxShadow: 'var(--card-shadow)' }}>
           <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-3">Today&apos;s intake</p>
           <div className="grid grid-cols-2 gap-2">
             {[
@@ -746,7 +758,7 @@ export default function LogFoodPage() {
             const isEditing = logEdit?.id === log.id
             const alreadySaved = isSaved(log)
             return (
-              <div key={log.id} className="bg-white border border-neutral-200 rounded-2xl p-4">
+              <div key={log.id} className="bg-white rounded-2xl p-4" style={{ boxShadow: 'var(--card-shadow)' }}>
                 {isEditing ? (
                   <div className="space-y-2.5">
                     <input value={logEdit.meal_name} onChange={e => setLogEdit(s => s && { ...s, meal_name: e.target.value })}
@@ -859,6 +871,7 @@ export default function LogFoodPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

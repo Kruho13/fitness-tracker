@@ -160,125 +160,141 @@ export default function GoalsPage() {
   if (fetching) return <div className="px-4 pt-8"><p className="text-neutral-400 text-sm">Loading...</p></div>
 
   return (
-    <div className="px-4 pt-6 pb-4 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-neutral-900">Goals</h1>
-        <p className="text-neutral-400 text-sm mt-0.5">Your macros are calculated from your stats</p>
+    <div>
+      <div
+        className="px-5 pt-8 pb-6"
+        style={{ background: 'linear-gradient(160deg, #111110 0%, #1C1C1A 100%)' }}
+      >
+        <p className="text-neutral-500 text-xs font-semibold uppercase tracking-widest mb-1">Settings</p>
+        <p className="text-white font-bold text-2xl leading-tight" style={{ fontFamily: 'var(--font-bricolage)' }}>
+          Goals
+        </p>
+        <p className="text-neutral-500 text-sm mt-1">Macros calculated from your stats</p>
       </div>
 
-      <form onSubmit={handleSave} className="space-y-6">
-        {/* Name */}
-        <section className="space-y-2">
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Your name</p>
-          <input
-            type="text"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            placeholder="First name"
-            className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-3 text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none focus:border-emerald-500 transition-colors"
-          />
-        </section>
+      <div className="px-4 pt-4 pb-6">
+        <form onSubmit={handleSave} className="space-y-4">
+          {/* Name */}
+          <section className="space-y-2">
+            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Your name</p>
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="First name"
+              className="w-full bg-white border border-neutral-100 rounded-xl px-4 py-3 text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none focus:border-emerald-500 transition-colors"
+              style={{ boxShadow: 'var(--card-shadow-sm)' }}
+            />
+          </section>
 
-        {/* Goal mode */}
-        <section className="space-y-2">
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Goal</p>
-          <div className="space-y-2">
-            {(Object.keys(GOAL_LABELS) as GoalMode[]).map(g => (
-              <button key={g} type="button" onClick={() => { setMode(g); setOverridden(false) }}
-                className={`w-full text-left px-4 py-3.5 rounded-2xl border transition-all ${mode === g
-                  ? 'border-emerald-500 bg-emerald-50'
-                  : 'border-neutral-200 bg-white hover:border-neutral-300'}`}>
-                <p className={`text-sm font-semibold ${mode === g ? 'text-emerald-700' : 'text-neutral-800'}`}>{GOAL_LABELS[g]}</p>
-                <p className="text-xs text-neutral-400 mt-0.5">{GOAL_DESCRIPTIONS[g]}</p>
-              </button>
-            ))}
-          </div>
-        </section>
+          {/* Goal mode */}
+          <section className="space-y-2">
+            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Goal</p>
+            <div className="space-y-2">
+              {(Object.keys(GOAL_LABELS) as GoalMode[]).map(g => (
+                <button key={g} type="button" onClick={() => { setMode(g); setOverridden(false) }}
+                  className={`w-full text-left px-4 py-3.5 rounded-2xl transition-all ${mode === g
+                    ? 'border border-emerald-500 bg-emerald-50'
+                    : 'bg-white'}`}
+                  style={mode !== g ? { boxShadow: 'var(--card-shadow-sm)' } : {}}>
+                  <p className={`text-sm font-semibold ${mode === g ? 'text-emerald-700' : 'text-neutral-800'}`}>{GOAL_LABELS[g]}</p>
+                  <p className="text-xs text-neutral-400 mt-0.5">{GOAL_DESCRIPTIONS[g]}</p>
+                </button>
+              ))}
+            </div>
+          </section>
 
-        {/* Activity level */}
-        <section className="space-y-2">
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Activity level</p>
-          <select value={activity} onChange={e => { setActivity(e.target.value as ActivityLevel); setOverridden(false) }}
-            className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-3 text-sm text-neutral-800 focus:outline-none focus:border-emerald-500 transition-colors">
-            {(Object.entries(ACTIVITY_LABELS) as [ActivityLevel, string][]).map(([val, label]) => (
-              <option key={val} value={val}>{label}</option>
-            ))}
-          </select>
-          {tdee && (
-            <p className="text-xs text-neutral-400 flex items-center gap-1.5 pl-1">
-              <Info size={12} />
-              Estimated TDEE: <span className="font-semibold text-neutral-600">{tdee} kcal/day</span>
-            </p>
-          )}
-        </section>
-
-        {/* Macro targets */}
-        <section className="space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Daily targets</p>
-            {overridden && (
-              <button type="button" onClick={resetToCalculated}
-                className="text-xs text-emerald-600 hover:text-emerald-700 font-medium">
-                Reset to calculated
-              </button>
+          {/* Activity level */}
+          <section className="space-y-2">
+            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Activity level</p>
+            <select value={activity} onChange={e => { setActivity(e.target.value as ActivityLevel); setOverridden(false) }}
+              className="w-full bg-white border border-neutral-100 rounded-xl px-4 py-3 text-sm text-neutral-800 focus:outline-none focus:border-emerald-500 transition-colors"
+              style={{ boxShadow: 'var(--card-shadow-sm)' }}>
+              {(Object.entries(ACTIVITY_LABELS) as [ActivityLevel, string][]).map(([val, label]) => (
+                <option key={val} value={val}>{label}</option>
+              ))}
+            </select>
+            {tdee && (
+              <p className="text-xs text-neutral-400 flex items-center gap-1.5 pl-1">
+                <Info size={12} />
+                Estimated TDEE: <span className="font-semibold text-neutral-600">{tdee} kcal/day</span>
+              </p>
             )}
-          </div>
-          <div className="space-y-2">
-            {[
-              { label: 'Calories', value: calories, setter: (v: number) => handleMacroChange(setCalories, v), unit: 'kcal', color: 'text-emerald-600' },
-              { label: 'Protein', value: protein, setter: (v: number) => handleMacroChange(setProtein, v), unit: 'g', color: 'text-blue-600' },
-              { label: 'Carbs', value: carbs, setter: (v: number) => handleMacroChange(setCarbs, v), unit: 'g', color: 'text-orange-500' },
-              { label: 'Fats', value: fats, setter: (v: number) => handleMacroChange(setFats, v), unit: 'g', color: 'text-yellow-500' },
-            ].map(({ label, value, setter, unit, color }) => (
-              <div key={label} className="bg-white border border-neutral-200 rounded-xl px-4 py-3 flex items-center justify-between gap-4">
-                <div>
-                  <p className={`text-sm font-semibold ${color}`}>{label}</p>
-                  <p className="text-neutral-400 text-xs">{unit}/day</p>
-                </div>
-                <input type="number" value={value} onChange={e => setter(Number(e.target.value))}
-                  min={1} max={9999}
-                  className="bg-neutral-50 border border-neutral-200 rounded-lg px-3 py-2 text-neutral-900 text-right font-bold w-24 text-base focus:outline-none focus:border-emerald-500 transition-colors" />
-              </div>
-            ))}
-          </div>
-        </section>
+          </section>
 
-        {/* Notification toggle */}
-        <section className="bg-white border border-neutral-200 rounded-2xl px-4 py-4">
-          {'Notification' in window && Notification.permission === 'denied' ? (
-            <div className="flex items-center gap-3">
-              <BellOff size={18} className="text-neutral-400 shrink-0" />
-              <div>
-                <p className="text-sm font-semibold text-neutral-700">Meal reminders blocked</p>
-                <p className="text-xs text-neutral-400 mt-0.5">Enable notifications in your browser settings to turn this on</p>
-              </div>
+          {/* Macro targets */}
+          <section className="space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Daily targets</p>
+              {overridden && (
+                <button type="button" onClick={resetToCalculated}
+                  className="text-xs text-emerald-600 hover:text-emerald-700 font-medium">
+                  Reset to calculated
+                </button>
+              )}
             </div>
-          ) : (
-            <div className="flex items-center justify-between gap-3">
+            <div className="space-y-2">
+              {[
+                { label: 'Calories', value: calories, setter: (v: number) => handleMacroChange(setCalories, v), unit: 'kcal', color: 'text-emerald-600' },
+                { label: 'Protein', value: protein, setter: (v: number) => handleMacroChange(setProtein, v), unit: 'g', color: 'text-blue-600' },
+                { label: 'Carbs', value: carbs, setter: (v: number) => handleMacroChange(setCarbs, v), unit: 'g', color: 'text-orange-500' },
+                { label: 'Fats', value: fats, setter: (v: number) => handleMacroChange(setFats, v), unit: 'g', color: 'text-yellow-500' },
+              ].map(({ label, value, setter, unit, color }) => (
+                <div key={label} className="bg-white rounded-xl px-4 py-3 flex items-center justify-between gap-4" style={{ boxShadow: 'var(--card-shadow-sm)' }}>
+                  <div>
+                    <p className={`text-sm font-semibold ${color}`}>{label}</p>
+                    <p className="text-neutral-400 text-xs">{unit}/day</p>
+                  </div>
+                  <input type="number" value={value} onChange={e => setter(Number(e.target.value))}
+                    min={1} max={9999}
+                    className="bg-neutral-50 border border-neutral-200 rounded-lg px-3 py-2 text-neutral-900 text-right font-bold w-24 text-base focus:outline-none focus:border-emerald-500 transition-colors" />
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Notification toggle */}
+          <section className="bg-white rounded-2xl px-4 py-4" style={{ boxShadow: 'var(--card-shadow)' }}>
+            {'Notification' in window && Notification.permission === 'denied' ? (
               <div className="flex items-center gap-3">
-                {notifEnabled ? <Bell size={18} className="text-emerald-600 shrink-0" /> : <BellOff size={18} className="text-neutral-400 shrink-0" />}
+                <BellOff size={18} className="text-neutral-400 shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold text-neutral-700">Meal reminders</p>
-                  <p className="text-xs text-neutral-400 mt-0.5">{notifEnabled ? "You'll be nudged when you haven't logged yet" : 'Get nudged around meal times'}</p>
-                  {notifError && <p className="text-xs text-red-500 mt-1">{notifError}</p>}
+                  <p className="text-sm font-semibold text-neutral-700">Meal reminders blocked</p>
+                  <p className="text-xs text-neutral-400 mt-0.5">Enable notifications in your browser settings to turn this on</p>
                 </div>
               </div>
-              <button type="button" onClick={handleNotifToggle} disabled={notifLoading}
-                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${notifEnabled ? 'bg-emerald-500' : 'bg-neutral-200'} disabled:opacity-50`}>
-                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${notifEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
-              </button>
-            </div>
-          )}
-        </section>
+            ) : (
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  {notifEnabled ? <Bell size={18} className="text-emerald-600 shrink-0" /> : <BellOff size={18} className="text-neutral-400 shrink-0" />}
+                  <div>
+                    <p className="text-sm font-semibold text-neutral-700">Meal reminders</p>
+                    <p className="text-xs text-neutral-400 mt-0.5">{notifEnabled ? "You'll be nudged when you haven't logged yet" : 'Get nudged around meal times'}</p>
+                    {notifError && <p className="text-xs text-red-500 mt-1">{notifError}</p>}
+                  </div>
+                </div>
+                <button type="button" onClick={handleNotifToggle} disabled={notifLoading}
+                  className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${notifEnabled ? 'bg-emerald-500' : 'bg-neutral-200'} disabled:opacity-50`}>
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${notifEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                </button>
+              </div>
+            )}
+          </section>
 
-        <button type="submit" disabled={loading}
-          className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-semibold py-3.5 rounded-2xl transition-colors text-sm">
-          {loading ? 'Saving...' : saved ? '✓ Goals saved' : 'Save goals'}
-        </button>
-      </form>
+          <button type="submit" disabled={loading}
+            className="w-full text-white font-semibold py-3.5 rounded-2xl transition-all active:scale-[0.98] text-sm disabled:opacity-40"
+            style={{
+              background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
+              boxShadow: loading ? 'none' : '0 4px 20px rgba(5,150,105,0.3)',
+            }}>
+            {loading ? 'Saving...' : saved ? '✓ Goals saved' : 'Save goals'}
+          </button>
+        </form>
 
-      <SignOutButton />
-
+        <div className="mt-4">
+          <SignOutButton />
+        </div>
+      </div>
     </div>
   )
 }
