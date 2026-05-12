@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
+@theme {
+  --font-display: var(--font-bricolage);
+}
+
 :root {
-  --background: #f9fafb;
-  --foreground: #111827;
+  --background: #F8F8F6;
+  --foreground: #111110;
+  --card: #FFFFFF;
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.04);
+  --card-shadow-sm: 0 1px 2px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
 }
 
 body {
@@ -10,6 +17,23 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Card elevation utility */
+.card {
+  background: var(--card);
+  box-shadow: var(--card-shadow);
+  border-radius: 1.25rem;
+}
+.card-sm {
+  background: var(--card);
+  box-shadow: var(--card-shadow-sm);
+  border-radius: 1rem;
+}
+
+/* Display font utility */
+.font-display {
+  font-family: var(--font-bricolage), var(--font-geist-sans), system-ui, sans-serif;
 }
 
 input[type="number"]::-webkit-inner-spin-button,
@@ -26,7 +50,7 @@ input[type="number"] {
   to { transform: translateY(0); opacity: 1; }
 }
 .animate-slide-up {
-  animation: slide-up 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  animation: slide-up 0.32s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 @keyframes fadeIn {
@@ -42,6 +66,14 @@ input[type="number"] {
   animation: pulse-skeleton 1.5s ease-in-out infinite;
   background: #e5e7eb;
   border-radius: 0.75rem;
+}
+
+@keyframes arc-fill {
+  from { stroke-dashoffset: var(--circ); }
+  to   { stroke-dashoffset: var(--offset); }
+}
+.arc-animate {
+  animation: arc-fill 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 select {
