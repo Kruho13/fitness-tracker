@@ -31,7 +31,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-neutral-900 tracking-tight">Fitness Tracker</h1>
+          <h1 className="text-2xl font-bold text-neutral-900 tracking-tight">Pulse</h1>
           <p className="text-neutral-500 mt-1 text-sm">Sign in to your account</p>
         </div>
         <form onSubmit={handleLogin} className="space-y-4">

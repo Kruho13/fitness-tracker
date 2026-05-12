@@ -6,7 +6,6 @@ import WeightChart from '@/components/ui/WeightChart'
 import SundayCheckinModal from '@/components/ui/SundayCheckinModal'
 import Link from 'next/link'
 import { Utensils, Scale, Target, BarChart2, Flame } from 'lucide-react'
-import SignOutButton from '@/components/ui/SignOutButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -128,7 +127,6 @@ export default async function HomePage() {
         </p>
       )}
 
-      <SignOutButton />
     </div>
   )
 }

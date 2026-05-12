@@ -134,6 +134,21 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Recomp signal: on a cut, strength going up while weight is roughly flat = potential muscle gain offsetting fat loss
+  let recompNote = ''
+  if (goals?.mode && (goals.mode === 'cut' || goals.mode === 'cut_aggressive') && strength === 'up' && trendWeights.length >= 2) {
+    const trendDelta = trendWeights[trendWeights.length - 1].weight_lbs - trendWeights[0].weight_lbs
+    if (trendDelta > -1.5 && trendDelta < 0.5) {
+      recompNote = 'strength is increasing while weight is roughly flat on a cut — likely body recomposition (muscle gain offsetting fat loss), the scale is not the full story here'
+    }
+  }
+
+  // Under-recovery signal: strength dropping + poor sleep
+  let recoveryNote = ''
+  if (strength === 'down' && sleep === 'poor') {
+    recoveryNote = 'strength declining and sleep is poor — likely under-recovery, not a nutrition issue'
+  }
+
   const strengthLabel = strength === 'up' ? 'increased' : strength === 'down' ? 'decreased' : 'stayed the same'
   const gymLabel = gym_consistency === 'consistent' ? 'consistent' : gym_consistency === 'missed_some' ? 'missed some days' : 'mostly skipped'
   const sleepLabel = sleep === 'good' ? 'good' : sleep === 'alright' ? 'alright' : 'poor'
@@ -147,6 +162,8 @@ export async function POST(req: NextRequest) {
     avgCalories !== null ? `- Avg daily calories this week: ${avgCalories} kcal` : '- Calories: insufficient data',
     actualDeficitSurplus !== null ? `- Actual deficit/surplus vs maintenance: ${actualDeficitSurplus > 0 ? '-' : '+'}${Math.abs(actualDeficitSurplus)} kcal/day (${actualDeficitSurplus > 0 ? 'deficit' : 'surplus'})` : '',
     stallNote ? `- STALL ALERT: ${stallNote}` : '',
+    recompNote ? `- RECOMP SIGNAL: ${recompNote}` : '',
+    recoveryNote ? `- RECOVERY ALERT: ${recoveryNote}` : '',
     calMin !== null && calMax !== null ? `- Calorie range this week: ${calMin}–${calMax} kcal (shows consistency or volatility)` : '',
     avgProtein !== null ? `- Avg daily protein: ${avgProtein}g` : '',
     avgCarbs !== null ? `- Avg daily carbs: ${avgCarbs}g` : '',
@@ -157,18 +174,34 @@ export async function POST(req: NextRequest) {
     weightTrendSummary ? `- 4-week weight trend: ${weightTrendSummary}` : '',
   ].filter(Boolean).join('\n')
 
-  const systemPrompt = `You are a direct, no-fluff fitness coach. Write a weekly report for an intermediate lifter. Use bold headers for 3 short sections.
+  const systemPrompt = `You are a sharp, experienced body composition coach. Your job is to analyze a week of real data and tell the client exactly what happened, why, and what to do next. Write three sections using bold headers.
 
 **What happened**
-2 sentences max. Use exact numbers — avg calories logged, actual deficit or surplus vs maintenance (TDEE), and weight change. Compare calories to TDEE, not just the calorie goal.
+2 sentences. Lead with the concrete outcome: weight change this week, average calories vs actual TDEE (not just vs the calorie goal), and average protein. Use exact numbers only — no vague language.
 
 **Why**
-2 sentences max. Connect the check-in responses (strength, gym, sleep, tracking) directly to the outcome. If a STALL ALERT is present, name the likely cause plainly — don't soften it.
+2–3 sentences. Diagnose the week like a coach who has the full picture.
+- If STALL ALERT is present: name the cause plainly. If tracking was sparse, the data is unreliable and that is likely the real issue. If tracking was good and there's still a stall, it's a genuine plateau — say so.
+- If RECOMP SIGNAL is present: explain that the scale not moving is not a failure — increasing strength while weight holds on a cut is body recomposition. Muscle is being built while fat is being lost. This is a good outcome.
+- If RECOVERY ALERT is present: connect declining strength to poor sleep, not nutrition. This is a recovery problem first.
+- Otherwise: connect gym consistency, sleep, and tracking quality to the outcome directly.
 
-**Adjust next week**
-1–2 sentences. Be specific and numeric. If a STALL ALERT is present: default is to reduce daily calories by 150–200 kcal. Only recommend a 1–2 week diet break at maintenance instead if at least two of these are true: strength is dropping, sleep is poor, goal mode is cut_aggressive, or the 4-week trend shows a stall the entire period. If on track: "hold the approach" is valid. Never give more than one adjustment. If tracking days < 4, make that the priority before any macro change.
+**Next week**
+1–2 sentences. One specific, numeric action only. Pick the highest-leverage adjustment:
+- If tracking was under 4 days: track consistently first — no macro changes until there's real data.
+- If protein is consistently 20+ grams below goal: hit protein before changing calories.
+- If STALL ALERT and tracking is solid: reduce daily calories by 150–200 kcal. Only suggest a diet break (1–2 weeks at maintenance) if strength is also dropping AND sleep has been poor.
+- If RECOMP SIGNAL: hold the current approach — this is working.
+- If RECOVERY ALERT: prioritize sleep and consider reducing training volume. Nutrition is not the issue.
+- If bulk is stalling (weight flat, not gaining): add 150–200 kcal/day.
+- If on track with no alerts: "Hold the approach" is a valid and complete answer.
 
-Rules: no bullet points, no praise padding. Use exact figures from the data. Do not reference the STALL ALERT label directly in your output — just act on it.`
+Rules:
+- No bullet points in your output — write in plain sentences
+- No filler phrases ("great job", "keep it up", "you're doing well")
+- Use exact figures from the data in every section
+- Never name the alert signals (STALL ALERT, RECOMP SIGNAL, RECOVERY ALERT) directly — just respond to what they mean
+- Each section should be tight — the best coaching is specific, not long`
 
   const userMessage = `Week: ${weekStart} to ${weekEnd}
 

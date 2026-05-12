@@ -8,7 +8,7 @@ const STEPS = [
   {
     tag: 'Welcome to Pulse',
     heading: 'Track less.\nLearn more.',
-    subheading: 'Pulse is built for intermediate lifters who want useful signal — not another app to babysit.',
+    subheading: 'Pulse is for people who care about their health but don\'t want tracking to be a second job.',
     content: (
       <div className="space-y-3">
         <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">

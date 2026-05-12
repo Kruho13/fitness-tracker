@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Pulse",
-  description: "AI-powered fitness tracking for intermediate lifters",
+  description: "Your AI body composition coach. Log food in plain English, track your weight trend, and get a weekly report that tells you exactly what to adjust.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

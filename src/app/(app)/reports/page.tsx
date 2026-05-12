@@ -146,7 +146,29 @@ export default function ReportsPage() {
       )}
 
       {reports.length === 0 && !showCheckin && (
-        <p className="text-center text-neutral-400 text-sm py-10">No reports yet. Complete your first weekly check-in to generate one.</p>
+        <div className="space-y-3">
+          <div className="bg-white border border-neutral-200 rounded-2xl p-5 space-y-3">
+            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">What your weekly report looks like</p>
+            <div className="space-y-3 opacity-60 pointer-events-none select-none">
+              <div>
+                <p className="text-neutral-900 font-semibold text-sm">What happened</p>
+                <p className="text-neutral-500 text-xs mt-1 leading-relaxed">You averaged 1,820 kcal/day against a 2,050 kcal maintenance — a 230 kcal/day deficit. Weight dropped 0.8 lbs this week.</p>
+              </div>
+              <div>
+                <p className="text-neutral-900 font-semibold text-sm">Why</p>
+                <p className="text-neutral-500 text-xs mt-1 leading-relaxed">Consistent tracking and solid gym attendance kept your intake in check. Good sleep likely contributed to the clean weight drop.</p>
+              </div>
+              <div>
+                <p className="text-neutral-900 font-semibold text-sm">Adjust next week</p>
+                <p className="text-neutral-500 text-xs mt-1 leading-relaxed">Hold the approach — you're losing at a sustainable rate. Hit protein target more consistently (avg 142g vs 180g goal).</p>
+              </div>
+            </div>
+          </div>
+          <button onClick={() => setShowCheckin(true)}
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3.5 rounded-2xl text-sm transition-colors">
+            Complete your first check-in
+          </button>
+        </div>
       )}
 
       <div className="space-y-3">

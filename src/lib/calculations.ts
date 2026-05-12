@@ -19,17 +19,17 @@ export const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {
 }
 
 export const GOAL_LABELS: Record<GoalMode, string> = {
-  cut_aggressive: 'Aggressive Cut',
-  cut: 'Cut',
-  maintain: 'Maintain / Recomp',
-  lean_bulk: 'Lean Bulk',
+  cut_aggressive: 'Lose fat fast',
+  cut: 'Get lean',
+  maintain: 'Stay balanced',
+  lean_bulk: 'Build muscle',
 }
 
 export const GOAL_DESCRIPTIONS: Record<GoalMode, string> = {
-  cut_aggressive: 'Lose fat fast — 750 kcal deficit. High protein to preserve muscle.',
-  cut: 'Steady fat loss — 500 kcal deficit. Sustainable over months.',
-  maintain: 'Hold weight or slowly recomp. Great for body composition.',
-  lean_bulk: 'Slow muscle gain — small surplus with controlled fat gain.',
+  cut_aggressive: 'Strong deficit — fast results, higher protein to protect muscle.',
+  cut: 'Steady fat loss — sustainable over months.',
+  maintain: 'Hold weight or slowly improve body composition.',
+  lean_bulk: 'Slow muscle gain — small surplus, minimal fat gain.',
 }
 
 export interface MacroTargets {

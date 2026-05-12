@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import { createHash } from 'crypto'
 import { createClient } from '@/lib/supabase/server'
 import { todayCT, logDateCT } from '@/lib/utils'
+
+function cacheKey(text: string): string {
+  return createHash('sha256').update(text.toLowerCase().trim().replace(/\s+/g, ' ')).digest('hex')
+}
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
@@ -74,6 +79,17 @@ Respond ONLY in this exact JSON format:
 }`
 
   try {
+    // Cache check — text only (images always re-estimate)
+    if (!image) {
+      const key = cacheKey(text)
+      const { data: cached } = await supabase
+        .from('food_estimate_cache')
+        .select('result')
+        .eq('text_hash', key)
+        .maybeSingle()
+      if (cached) return NextResponse.json({ breakdown: cached.result })
+    }
+
     const userContent = image
       ? [
           { type: 'text' as const, text: text?.trim() ? text : 'What food is in this image? Estimate the macros.' },
@@ -89,10 +105,20 @@ Respond ONLY in this exact JSON format:
       ],
       response_format: { type: 'json_object' },
       max_tokens: 600,
-      temperature: 0.2,
+      temperature: 0,
+      seed: 42,
     })
 
     const parsed = JSON.parse(response.choices[0].message.content || '{}')
+
+    // Store in cache for future identical inputs
+    if (!image) {
+      await supabase.from('food_estimate_cache').upsert({
+        text_hash: cacheKey(text),
+        result: parsed,
+      })
+    }
+
     return NextResponse.json({ breakdown: parsed })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })

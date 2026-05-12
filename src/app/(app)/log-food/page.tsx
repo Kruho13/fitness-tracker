@@ -65,8 +65,11 @@ export default function LogFoodPage() {
     setShowPushPrompt(false)
   }
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [showPhotoDesc, setShowPhotoDesc] = useState(false)
+  const [photoDesc, setPhotoDesc] = useState('')
   const [listening, setListening] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const recognitionRef = useRef<any>(null)
   const today = logDateCT()
   const [viewDate, setViewDate] = useState(today)
 
@@ -156,29 +159,50 @@ export default function LogFoodPage() {
 
   async function handleEstimateFromImage(dataUrl: string) {
     setEstimating(true); setError('')
+    const descText = photoDesc.trim() || input.trim()
     try {
       const res = await fetch('/api/food?mode=estimate', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: input, image: dataUrl }),
+        body: JSON.stringify({ text: descText || null, image: dataUrl }),
       })
       const data = await res.json()
       if (data.error) { setError(data.error); return }
       setBreakdown(data.breakdown)
-      setPopupText(input || 'Photo')
+      setPopupText(descText || 'Photo')
     } catch { setError('Failed to estimate. Try again.') }
-    finally { setEstimating(false) }
+    finally { setEstimating(false); setPhotoDesc('') }
   }
 
   function handleMic() {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     if (!SpeechRecognition) { setError('Voice not supported on this browser'); return }
+
+    if (listening) {
+      recognitionRef.current?.stop()
+      return
+    }
+
     const recognition = new SpeechRecognition()
     recognition.lang = 'en-US'
-    recognition.interimResults = false
+    recognition.continuous = true
+    recognition.interimResults = true
+    recognitionRef.current = recognition
+
+    const baseText = input
+    let finalTranscript = ''
+
     recognition.onstart = () => setListening(true)
-    recognition.onend = () => setListening(false)
-    recognition.onresult = (e: any) => setInput(prev => prev ? prev + ' ' + e.results[0][0].transcript : e.results[0][0].transcript)
-    recognition.onerror = () => setListening(false)
+    recognition.onend = () => { setListening(false); recognitionRef.current = null }
+    recognition.onresult = (e: any) => {
+      let interim = ''
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript + ' '
+        else interim += e.results[i][0].transcript
+      }
+      const voiceText = (finalTranscript + interim).trim()
+      setInput(baseText ? baseText + ' ' + voiceText : voiceText)
+    }
+    recognition.onerror = () => { setListening(false); recognitionRef.current = null }
     recognition.start()
   }
 
@@ -533,7 +557,7 @@ export default function LogFoodPage() {
             className="w-full bg-white border border-neutral-200 rounded-2xl px-4 py-3.5 pr-20 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-emerald-500 transition-colors resize-none text-sm"
             rows={3} />
           <div className="absolute bottom-3 right-3 flex gap-1.5">
-            <button type="button" onClick={() => fileInputRef.current?.click()}
+            <button type="button" onClick={() => { setShowPhotoDesc(true); setPhotoDesc('') }}
               className="p-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-500 transition-colors" title="Log from photo">
               <Camera size={16} />
             </button>
@@ -544,16 +568,45 @@ export default function LogFoodPage() {
           </div>
         </div>
         <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoSelect} className="hidden" />
-        {photoPreview && (
-          <div className="space-y-1.5">
-            <div className="relative">
-              <img src={photoPreview} alt="Food photo" className="w-full h-32 object-cover rounded-xl" />
-              <button type="button" onClick={() => setPhotoPreview(null)}
-                className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1">
-                <X size={12} />
+
+        {showPhotoDesc && !photoPreview && (
+          <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-4 space-y-3">
+            <div>
+              <p className="text-sm font-semibold text-neutral-800">What are you photographing?</p>
+              <p className="text-neutral-400 text-xs mt-0.5">Helps the AI identify portions and items it might miss in the photo</p>
+            </div>
+            <textarea
+              value={photoDesc}
+              onChange={e => setPhotoDesc(e.target.value)}
+              placeholder='e.g. "Chipotle chicken bowl" or "oatmeal with banana and peanut butter"'
+              rows={2}
+              autoFocus
+              className="w-full bg-white border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-800 focus:outline-none focus:border-emerald-500 resize-none placeholder-neutral-400"
+            />
+            <div className="flex gap-2">
+              <button type="button" onClick={() => { setShowPhotoDesc(false); setPhotoDesc('') }}
+                className="px-4 py-2.5 text-sm font-medium text-neutral-500 border border-neutral-200 rounded-xl hover:bg-white transition-colors">
+                Cancel
+              </button>
+              <button type="button" onClick={() => { setShowPhotoDesc(false); fileInputRef.current?.click() }}
+                className="px-4 py-2.5 text-sm font-medium text-neutral-500 border border-neutral-200 rounded-xl hover:bg-white transition-colors">
+                Skip
+              </button>
+              <button type="button" onClick={() => { setShowPhotoDesc(false); fileInputRef.current?.click() }}
+                className="flex-1 py-2.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors">
+                Take photo
               </button>
             </div>
-            <p className="text-neutral-400 text-xs px-1">Add a description for better accuracy — e.g. <span className="text-neutral-600">"Chipotle chicken bowl"</span></p>
+          </div>
+        )}
+
+        {photoPreview && (
+          <div className="relative">
+            <img src={photoPreview} alt="Food photo" className="w-full h-32 object-cover rounded-xl" />
+            <button type="button" onClick={() => setPhotoPreview(null)}
+              className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1">
+              <X size={12} />
+            </button>
           </div>
         )}
         {error && <p className="text-red-500 text-sm">{error}</p>}

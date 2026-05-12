@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { calculateMacros, ACTIVITY_LABELS, GOAL_LABELS, GOAL_DESCRIPTIONS, type GoalMode, type ActivityLevel, type Gender } from '@/lib/calculations'
 import { Info, Bell, BellOff } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import SignOutButton from '@/components/ui/SignOutButton'
 
 export default function GoalsPage() {
 
@@ -275,6 +276,8 @@ export default function GoalsPage() {
           {loading ? 'Saving...' : saved ? '✓ Goals saved' : 'Save goals'}
         </button>
       </form>
+
+      <SignOutButton />
 
     </div>
   )
