@@ -230,6 +230,13 @@ export default function OnboardingPage() {
                 <div className="flex items-start gap-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
                   <div>
+                    <p className="text-neutral-800 text-xs font-medium">Scan a nutrition label for exact numbers</p>
+                    <p className="text-neutral-400 text-xs mt-0.5">Tap the barcode icon, photograph the label, enter how many servings — macros calculated exactly from the label</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                  <div>
                     <p className="text-neutral-800 text-xs font-medium">Log as you go, not at the end of the day</p>
                     <p className="text-neutral-400 text-xs mt-0.5">You&apos;ll remember portions more accurately right after eating</p>
                   </div>

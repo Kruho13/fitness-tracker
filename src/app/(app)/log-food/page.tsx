@@ -1,13 +1,15 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Pencil, Check, X, Plus, BookOpen, Flame, Camera, Mic, Utensils, Bell } from 'lucide-react'
+import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Pencil, Check, X, Plus, BookOpen, Flame, Camera, Mic, Utensils, Bell, Barcode } from 'lucide-react'
 import { logDateCT, formatDate } from '@/lib/utils'
 
 interface FoodItem { name: string; calories: number; protein: number; carbs: number; fats: number }
 interface Breakdown { meal_name: string; reasoning?: string; items: FoodItem[]; total: FoodItem }
 interface FoodLog { id: string; raw_text: string; meal_name: string | null; calories: number; protein: number; carbs: number; fats: number }
 interface SavedMeal { id: string; name: string; calories: number; protein: number; carbs: number; fats: number }
+interface SavedLabel { id: string; name: string; serving_size: string | null; calories: number; protein: number; carbs: number; fats: number }
+type LabelScanState = { name: string; serving_size: string; calories: number; protein: number; carbs: number; fats: number } | null
 type LogEditState = { id: string; rawText: string; calories: number; protein: number; carbs: number; fats: number; meal_name: string } | null
 type MealEditState = { id: string; name: string; portion: string; calories: number; protein: number; carbs: number; fats: number } | null
 
@@ -66,7 +68,16 @@ export default function LogFoodPage() {
   }
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [listening, setListening] = useState(false)
+  const [labelScan, setLabelScan] = useState<LabelScanState>(null)
+  const [labelQuantity, setLabelQuantity] = useState('1')
+  const [labelScanning, setLabelScanning] = useState(false)
+  const [labelSaved, setLabelSaved] = useState(false)
+  const [savedLabels, setSavedLabels] = useState<SavedLabel[]>([])
+  const [showLabels, setShowLabels] = useState(false)
+  const [labelAddId, setLabelAddId] = useState<string | null>(null)
+  const [labelAddServings, setLabelAddServings] = useState('1')
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const labelFileInputRef = useRef<HTMLInputElement>(null)
   const recognitionRef = useRef<any>(null)
   const today = logDateCT()
   const [viewDate, setViewDate] = useState(today)
@@ -79,6 +90,7 @@ export default function LogFoodPage() {
 
   useEffect(() => {
     fetchSavedMeals()
+    fetchSavedLabels()
     fetch('/api/summary').then(r => r.json()).then(d => {
       if (d.calorieGoal) setCalorieGoal(d.calorieGoal)
       if (d.proteinGoal) setProteinGoal(d.proteinGoal)
@@ -105,6 +117,118 @@ export default function LogFoodPage() {
     const res = await fetch('/api/food/save-meal')
     const data = await res.json()
     if (data.meals) setSavedMeals(data.meals)
+  }
+
+  async function fetchSavedLabels() {
+    const res = await fetch('/api/labels')
+    const data = await res.json()
+    if (data.labels) setSavedLabels(data.labels)
+  }
+
+  function handleLabelPhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const img = new Image()
+    const objectUrl = URL.createObjectURL(file)
+    img.onload = () => {
+      const MAX = 1024
+      const scale = Math.min(1, MAX / Math.max(img.width, img.height))
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.round(img.width * scale)
+      canvas.height = Math.round(img.height * scale)
+      canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.8)
+      URL.revokeObjectURL(objectUrl)
+      handleScanLabel(dataUrl)
+    }
+    img.src = objectUrl
+    e.target.value = ''
+  }
+
+  async function handleScanLabel(dataUrl: string) {
+    setLabelScanning(true); setError(''); setLabelSaved(false)
+    try {
+      const res = await fetch('/api/food?mode=label', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: dataUrl }),
+      })
+      const data = await res.json()
+      if (data.error) { setError(data.error); return }
+      setLabelScan(data.label)
+      setLabelQuantity('1')
+    } catch { setError('Failed to read label. Try again.') }
+    finally { setLabelScanning(false) }
+  }
+
+  async function handleLogFromLabel() {
+    if (!labelScan) return
+    const qty = parseFloat(labelQuantity)
+    if (!qty || qty <= 0) return
+    setSaving(true)
+    try {
+      const macros = {
+        total: {
+          calories: Math.round(labelScan.calories * qty),
+          protein: Math.round(labelScan.protein * qty),
+          carbs: Math.round(labelScan.carbs * qty),
+          fats: Math.round(labelScan.fats * qty),
+        },
+        meal_name: labelScan.name,
+      }
+      const res = await fetch('/api/food?mode=save', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: `${labelScan.name} (${qty} ${qty === 1 ? 'serving' : 'servings'})`, date: viewDate, macros }),
+      })
+      const data = await res.json()
+      if (data.error) { setError(data.error); return }
+      setLogs(prev => [{ id: data.log.id, raw_text: data.log.raw_text, meal_name: data.log.meal_name, calories: data.log.calories, protein: data.log.protein, carbs: data.log.carbs, fats: data.log.fats }, ...prev])
+      setLabelScan(null); setLabelQuantity('1'); setLabelSaved(false)
+    } catch { setError('Failed to log. Try again.') }
+    finally { setSaving(false) }
+  }
+
+  async function handleSaveLabel() {
+    if (!labelScan) return
+    const res = await fetch('/api/labels', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(labelScan),
+    })
+    const data = await res.json()
+    if (data.label) {
+      setSavedLabels(prev => [data.label, ...prev])
+      setLabelSaved(true)
+    }
+  }
+
+  async function handleLogFromSavedLabel(label: SavedLabel) {
+    const qty = parseFloat(labelAddServings)
+    if (!qty || qty <= 0) return
+    setSaving(true)
+    try {
+      const macros = {
+        total: {
+          calories: Math.round(label.calories * qty),
+          protein: Math.round(label.protein * qty),
+          carbs: Math.round(label.carbs * qty),
+          fats: Math.round(label.fats * qty),
+        },
+        meal_name: label.name,
+      }
+      const res = await fetch('/api/food?mode=save', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: `${label.name} (${qty} ${qty === 1 ? 'serving' : 'servings'})`, date: viewDate, macros }),
+      })
+      const data = await res.json()
+      if (data.error) { setError(data.error); return }
+      setLogs(prev => [{ id: data.log.id, raw_text: data.log.raw_text, meal_name: data.log.meal_name, calories: data.log.calories, protein: data.log.protein, carbs: data.log.carbs, fats: data.log.fats }, ...prev])
+      setLabelAddId(null); setLabelAddServings('1')
+    } catch { setError('Failed to log. Try again.') }
+    finally { setSaving(false) }
+  }
+
+  async function handleDeleteSavedLabel(id: string) {
+    await fetch('/api/labels', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+    setSavedLabels(prev => prev.filter(l => l.id !== id))
   }
 
   async function registerPush() {
@@ -557,6 +681,142 @@ export default function LogFoodPage() {
         </div>
       )}
 
+      {/* Saved labels */}
+      {savedLabels.length > 0 && (
+        <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: 'var(--card-shadow)' }}>
+          <button onClick={() => setShowLabels(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors">
+            <span className="flex items-center gap-2">
+              <Barcode size={15} className="text-emerald-600" />
+              My labels
+              <span className="bg-neutral-100 text-neutral-500 text-xs px-1.5 py-0.5 rounded-full">{savedLabels.length}</span>
+            </span>
+            {showLabels ? <ChevronUp size={15} className="text-neutral-400" /> : <ChevronDown size={15} className="text-neutral-400" />}
+          </button>
+          {showLabels && (
+            <div className="divide-y divide-neutral-100">
+              {savedLabels.map(label => {
+                const isAdding = labelAddId === label.id
+                const qty = parseFloat(labelAddServings) || 1
+                return (
+                  <div key={label.id} className="px-4 py-3">
+                    {isAdding ? (
+                      <div className="space-y-2.5">
+                        <p className="text-sm font-semibold text-neutral-800">{label.name}</p>
+                        <p className="text-xs text-neutral-400">Per serving: {label.calories} kcal · {label.protein}g P · {label.carbs}g C · {label.fats}g F</p>
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1">
+                            <p className="text-xs text-neutral-500 mb-1">Servings{label.serving_size ? ` (1 serving = ${label.serving_size})` : ''}</p>
+                            <input type="number" value={labelAddServings} onChange={e => setLabelAddServings(e.target.value)}
+                              step="0.5" min="0.5" placeholder="1"
+                              className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-sm font-bold text-neutral-900 focus:outline-none focus:border-emerald-500" />
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-neutral-400">Total</p>
+                            <p className="text-sm font-bold text-emerald-600">{Math.round(label.calories * qty)} kcal</p>
+                            <p className="text-xs text-neutral-400">{Math.round(label.protein * qty)}g P</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => { setLabelAddId(null); setLabelAddServings('1') }}
+                            className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs text-neutral-500 border border-neutral-200 rounded-lg">
+                            <X size={12} /> Cancel
+                          </button>
+                          <button onClick={() => handleLogFromSavedLabel(label)} disabled={saving}
+                            className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs text-white bg-emerald-600 rounded-lg font-semibold disabled:opacity-40">
+                            <Plus size={12} /> Log
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-neutral-800 text-sm font-medium truncate">{label.name}</p>
+                          <p className="text-neutral-400 text-xs mt-0.5">
+                            {label.calories} kcal · {label.protein}g P{label.serving_size ? ` · per ${label.serving_size}` : ' · per serving'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button onClick={() => handleDeleteSavedLabel(label.id)}
+                            className="p-1.5 text-neutral-400 hover:text-red-500 rounded-lg hover:bg-neutral-100 transition-colors">
+                            <Trash2 size={13} />
+                          </button>
+                          <button onClick={() => { setLabelAddId(label.id); setLabelAddServings('1') }} disabled={saving}
+                            className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                            <Plus size={12} /> Add
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Label scan result */}
+      {labelScanning && (
+        <div className="bg-white rounded-2xl p-4 flex items-center gap-3" style={{ boxShadow: 'var(--card-shadow)' }}>
+          <Barcode size={18} className="text-emerald-500 shrink-0" />
+          <p className="text-sm text-neutral-500">Reading nutrition label...</p>
+        </div>
+      )}
+      {labelScan && !labelScanning && (
+        <div className="bg-white rounded-2xl p-4 space-y-3" style={{ boxShadow: 'var(--card-shadow)' }}>
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-0.5">Label scanned</p>
+              <input value={labelScan.name} onChange={e => setLabelScan(s => s && { ...s, name: e.target.value })}
+                className="text-neutral-900 font-semibold text-sm w-full focus:outline-none border-b border-transparent focus:border-neutral-300 pb-0.5 bg-transparent" />
+            </div>
+            <button onClick={() => { setLabelScan(null); setLabelSaved(false) }} className="text-neutral-400 hover:text-neutral-600 shrink-0 mt-1">
+              <X size={15} />
+            </button>
+          </div>
+
+          <div>
+            {labelScan.serving_size && <p className="text-xs text-neutral-400 mb-1.5">Per serving ({labelScan.serving_size})</p>}
+            <div className="grid grid-cols-4 gap-2 text-center bg-neutral-50 rounded-xl p-2.5">
+              {([['calories','Cal','text-emerald-600'],['protein','Pro','text-blue-600'],['carbs','Carb','text-orange-500'],['fats','Fat','text-yellow-500']] as const).map(([key, label, color]) => (
+                <div key={key}>
+                  <p className={`text-sm font-bold ${color}`}>{labelScan[key as 'calories'|'protein'|'carbs'|'fats']}{key !== 'calories' ? 'g' : ''}</p>
+                  <p className="text-neutral-400 text-xs">{label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <p className="text-xs text-neutral-500 mb-1">Servings</p>
+              <input type="number" value={labelQuantity} onChange={e => setLabelQuantity(e.target.value)}
+                step="0.5" min="0.5" placeholder="1"
+                className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-base font-bold text-neutral-900 focus:outline-none focus:border-emerald-500" />
+            </div>
+            {labelQuantity && parseFloat(labelQuantity) > 0 && (
+              <div className="text-right">
+                <p className="text-xs text-neutral-400">Total</p>
+                <p className="text-sm font-bold text-emerald-600">{Math.round(labelScan.calories * parseFloat(labelQuantity))} kcal</p>
+                <p className="text-xs text-neutral-400">{Math.round(labelScan.protein * parseFloat(labelQuantity))}g protein</p>
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            <button onClick={handleSaveLabel} disabled={labelSaved}
+              className={`flex-1 py-2.5 text-xs font-semibold rounded-xl border transition-colors ${labelSaved ? 'border-emerald-500 text-emerald-600 bg-emerald-50' : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50'}`}>
+              {labelSaved ? '✓ Saved' : 'Save label'}
+            </button>
+            <button onClick={handleLogFromLabel} disabled={saving || !labelQuantity || parseFloat(labelQuantity) <= 0}
+              className="flex-1 py-2.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl disabled:opacity-40 transition-colors">
+              Log
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Input */}
       <form onSubmit={handleEstimate} className="space-y-3">
         <div className="relative">
@@ -570,6 +830,10 @@ export default function LogFoodPage() {
               className="p-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-500 transition-colors" title="Log from photo">
               <Camera size={16} />
             </button>
+            <button type="button" onClick={() => labelFileInputRef.current?.click()}
+              className="p-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-500 transition-colors" title="Scan nutrition label">
+              <Barcode size={16} />
+            </button>
             <button type="button" onClick={handleMic}
               className={`p-2 rounded-xl transition-colors ${listening ? 'bg-red-100 text-red-500' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-500'}`} title="Speak your meal">
               <Mic size={16} />
@@ -577,6 +841,7 @@ export default function LogFoodPage() {
           </div>
         </div>
         <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoSelect} className="hidden" />
+        <input ref={labelFileInputRef} type="file" accept="image/*" capture="environment" onChange={handleLabelPhotoSelect} className="hidden" />
 
 
         {photoPreview && (
@@ -761,7 +1026,7 @@ export default function LogFoodPage() {
                         ))}
                       </div>
                     )}
-                    {/* Macro preview */}
+                    {/* Macro totals */}
                     <div className="grid grid-cols-4 gap-2 text-center bg-neutral-50 rounded-xl p-2.5">
                       {([['calories','Cal','text-emerald-600'],['protein','Pro','text-blue-600'],['carbs','Carb','text-orange-500'],['fats','Fat','text-yellow-500']] as const).map(([key, label, color]) => (
                         <div key={key}>

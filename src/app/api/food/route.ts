@@ -50,6 +50,42 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ log: data, suggestSave, mealName })
   }
 
+  // Mode: label — extract nutrition facts from a label image
+  if (mode === 'label') {
+    if (!image) return NextResponse.json({ error: 'No image provided' }, { status: 400 })
+    try {
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: `Read the nutrition label in this image. Return ONLY this JSON:
+{
+  "name": "product name (be specific)",
+  "serving_size": "serving size as written on label e.g. '3/4 cup (170g)'",
+  "calories": calories per serving as number,
+  "protein": protein grams per serving as number,
+  "carbs": total carbohydrate grams per serving as number,
+  "fats": total fat grams per serving as number
+}
+Read values exactly as printed. Always return all fields.`,
+            },
+            { type: 'image_url', image_url: { url: image } },
+          ],
+        }],
+        response_format: { type: 'json_object' },
+        max_tokens: 300,
+        temperature: 0,
+      })
+      const parsed = JSON.parse(response.choices[0].message.content || '{}')
+      return NextResponse.json({ label: parsed })
+    } catch (err: any) {
+      return NextResponse.json({ error: err.message }, { status: 500 })
+    }
+  }
+
   // Mode: estimate — call OpenAI, return breakdown without saving
   if (!text?.trim() && !image) return NextResponse.json({ error: 'No food text provided' }, { status: 400 })
 
