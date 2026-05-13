@@ -65,24 +65,27 @@ export default function SignupPage() {
     const macros = calculateMacros(gender, weight_lbs, height_cm, Number(age), activity, goal)
 
     // Save profile
-    await supabase.from('user_profiles').upsert({
+    const { error: profileError } = await supabase.from('user_profiles').upsert({
       user_id: data.user.id,
+      name,
       gender,
       age: Number(age),
       height_cm,
       weight_lbs,
       activity_level: activity,
-    })
+    }, { onConflict: 'user_id' })
+    if (profileError) { setError(`Profile save failed: ${profileError.message}`); setLoading(false); return }
 
     // Save calculated goals
-    await supabase.from('goals').upsert({
+    const { error: goalsError } = await supabase.from('goals').upsert({
       user_id: data.user.id,
       mode: goal,
       calories: macros.calories,
       carbs: macros.carbs,
       protein: macros.protein,
       fats: macros.fats,
-    })
+    }, { onConflict: 'user_id' })
+    if (goalsError) { setError(`Goals save failed: ${goalsError.message}`); setLoading(false); return }
 
     // Seed initial weight log
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
