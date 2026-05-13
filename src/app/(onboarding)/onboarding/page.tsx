@@ -87,10 +87,10 @@ export default function OnboardingPage() {
           </h1>
           <p className="text-neutral-400 text-sm mt-1">
             {step === 'body'
-              ? 'Used to calculate your personalized calorie and macro targets — you can edit these anytime'
+              ? 'We use this to calculate your calorie and macro targets'
               : step === 'activity'
-              ? 'Used to set the right calorie adjustment for your goal — you can edit these anytime'
-              : 'One thing before you start'}
+              ? 'This sets the right calorie adjustment for your goal'
+              : "Here's how it works"}
           </p>
         </div>
 
@@ -191,49 +191,45 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* Step 3 — Mindset + best practices */}
+        {/* Step 3 — Orientation */}
         {step === 'tip' && (
           <div className="space-y-4">
-            {/* Motivation */}
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5">
-              <p className="text-emerald-900 font-semibold text-sm">Consistency beats perfection</p>
-              <p className="text-emerald-700 text-sm mt-1 leading-relaxed">
-                An imperfect log every day beats a perfect log twice a week. Your weight trend over time is the real signal — individual estimates don&apos;t need to be exact.
-              </p>
+            {/* Daily routine */}
+            <div className="bg-white border border-neutral-200 rounded-2xl p-5 space-y-3">
+              <p className="text-neutral-900 font-semibold text-sm">Your daily routine</p>
+              {[
+                { icon: '🍽️', step: 'Log meals', desc: 'After each meal, log what you ate — takes under 10 seconds' },
+                { icon: '⚖️', step: 'Weigh in', desc: 'Step on the scale each morning for accurate trend data' },
+                { icon: '📊', step: 'Weekly report', desc: 'Every week, get a full breakdown of your weight and nutrition progress' },
+              ].map((item, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-neutral-50 flex items-center justify-center text-base shrink-0">{item.icon}</div>
+                  <div>
+                    <p className="text-neutral-800 text-xs font-semibold">{item.step}</p>
+                    <p className="text-neutral-400 text-xs mt-0.5">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
             </div>
 
             {/* How to log */}
             <div className="bg-white border border-neutral-200 rounded-2xl p-5 space-y-4">
-              <p className="text-neutral-900 font-semibold text-sm">How to log food</p>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                  <div>
-                    <p className="text-neutral-800 text-xs font-medium">Just describe it in plain English</p>
-                    <p className="text-neutral-400 text-xs mt-0.5">&ldquo;big mac and fries&rdquo; or &ldquo;bowl of oatmeal with banana&rdquo; — no barcodes, no calorie counting</p>
+              <p className="text-neutral-900 font-semibold text-sm">4 ways to log food</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { icon: '✏️', label: 'Text', desc: 'Describe it in plain English' },
+                  { icon: '🎙️', label: 'Voice', desc: 'Speak your meal out loud' },
+                  { icon: '📷', label: 'Photo', desc: 'Snap a picture of your food' },
+                  { icon: '🔲', label: 'Label scan', desc: 'Photograph a nutrition label' },
+                ].map(m => (
+                  <div key={m.label} className="bg-neutral-50 rounded-xl p-3">
+                    <p className="text-base mb-1">{m.icon}</p>
+                    <p className="text-neutral-800 text-xs font-semibold">{m.label}</p>
+                    <p className="text-neutral-400 text-xs mt-0.5">{m.desc}</p>
                   </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                  <div>
-                    <p className="text-neutral-800 text-xs font-medium">For packaged foods, add the label numbers</p>
-                    <p className="text-neutral-400 text-xs mt-0.5">&ldquo;Oikos yogurt, 130 cal, 20g protein&rdquo; — this locks in the exact values from the label</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                  <div>
-                    <p className="text-neutral-800 text-xs font-medium">Save meals you eat regularly</p>
-                    <p className="text-neutral-400 text-xs mt-0.5">After logging something 3 times, save it — one tap to add it next time</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                  <div>
-                    <p className="text-neutral-800 text-xs font-medium">Scan a nutrition label for exact numbers</p>
-                    <p className="text-neutral-400 text-xs mt-0.5">Tap the barcode icon, photograph the label, enter how many servings — macros calculated exactly from the label</p>
-                  </div>
-                </div>
+                ))}
+              </div>
+              <div className="space-y-3 pt-1">
                 <div className="flex items-start gap-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
                   <div>
@@ -241,7 +237,22 @@ export default function OnboardingPage() {
                     <p className="text-neutral-400 text-xs mt-0.5">You&apos;ll remember portions more accurately right after eating</p>
                   </div>
                 </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                  <div>
+                    <p className="text-neutral-800 text-xs font-medium">Save meals you repeat</p>
+                    <p className="text-neutral-400 text-xs mt-0.5">After logging something a few times, save it — one tap to add it next time</p>
+                  </div>
+                </div>
               </div>
+            </div>
+
+            {/* Mindset */}
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5">
+              <p className="text-emerald-900 font-semibold text-sm">Consistency beats perfection</p>
+              <p className="text-emerald-700 text-sm mt-1 leading-relaxed">
+                An imperfect log every day beats a perfect log twice a week. Your trend over time is the real signal.
+              </p>
             </div>
 
             <button onClick={() => router.push('/welcome')} className="btn-primary w-full">
