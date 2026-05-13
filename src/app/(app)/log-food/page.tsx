@@ -65,8 +65,6 @@ export default function LogFoodPage() {
     setShowPushPrompt(false)
   }
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
-  const [showPhotoDesc, setShowPhotoDesc] = useState(false)
-  const [photoDesc, setPhotoDesc] = useState('')
   const [listening, setListening] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const recognitionRef = useRef<any>(null)
@@ -159,18 +157,17 @@ export default function LogFoodPage() {
 
   async function handleEstimateFromImage(dataUrl: string) {
     setEstimating(true); setError('')
-    const descText = photoDesc.trim() || input.trim()
     try {
       const res = await fetch('/api/food?mode=estimate', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: descText || null, image: dataUrl }),
+        body: JSON.stringify({ image: dataUrl }),
       })
       const data = await res.json()
       if (data.error) { setError(data.error); return }
       setBreakdown(data.breakdown)
-      setPopupText(descText || 'Photo')
+      setPopupText('Photo')
     } catch { setError('Failed to estimate. Try again.') }
-    finally { setEstimating(false); setPhotoDesc('') }
+    finally { setEstimating(false) }
   }
 
   function handleMic() {
@@ -569,7 +566,7 @@ export default function LogFoodPage() {
             className="w-full bg-white border border-neutral-200 rounded-2xl px-4 py-3.5 pr-20 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-emerald-500 transition-colors resize-none text-sm"
             rows={3} />
           <div className="absolute bottom-3 right-3 flex gap-1.5">
-            <button type="button" onClick={() => { setShowPhotoDesc(true); setPhotoDesc('') }}
+            <button type="button" onClick={() => fileInputRef.current?.click()}
               className="p-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-500 transition-colors" title="Log from photo">
               <Camera size={16} />
             </button>
@@ -581,36 +578,6 @@ export default function LogFoodPage() {
         </div>
         <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoSelect} className="hidden" />
 
-        {showPhotoDesc && !photoPreview && (
-          <div className="bg-white rounded-2xl p-4 space-y-3" style={{ boxShadow: 'var(--card-shadow)' }}>
-            <div>
-              <p className="text-sm font-semibold text-neutral-800">What are you photographing?</p>
-              <p className="text-neutral-400 text-xs mt-0.5">Helps the AI identify portions and items it might miss in the photo</p>
-            </div>
-            <textarea
-              value={photoDesc}
-              onChange={e => setPhotoDesc(e.target.value)}
-              placeholder='e.g. "Chipotle chicken bowl" or "oatmeal with banana and peanut butter"'
-              rows={2}
-              autoFocus
-              className="w-full bg-white border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-800 focus:outline-none focus:border-emerald-500 resize-none placeholder-neutral-400"
-            />
-            <div className="flex gap-2">
-              <button type="button" onClick={() => { setShowPhotoDesc(false); setPhotoDesc('') }}
-                className="px-4 py-2.5 text-sm font-medium text-neutral-500 border border-neutral-200 rounded-xl hover:bg-white transition-colors">
-                Cancel
-              </button>
-              <button type="button" onClick={() => { setShowPhotoDesc(false); fileInputRef.current?.click() }}
-                className="px-4 py-2.5 text-sm font-medium text-neutral-500 border border-neutral-200 rounded-xl hover:bg-white transition-colors">
-                Skip
-              </button>
-              <button type="button" onClick={() => { setShowPhotoDesc(false); fileInputRef.current?.click() }}
-                className="flex-1 py-2.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors">
-                Take photo
-              </button>
-            </div>
-          </div>
-        )}
 
         {photoPreview && (
           <div className="relative">
