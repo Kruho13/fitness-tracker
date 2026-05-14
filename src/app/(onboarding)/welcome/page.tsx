@@ -42,7 +42,7 @@ const STEPS = [
           {[
             { rank: '1', label: 'Weigh it', example: '"400g chicken breast, 1 cup rice"', note: 'Most accurate', color: 'bg-emerald-600' },
             { rank: '2', label: 'Measure it', example: '"1 cup oats, 2 tbsp peanut butter"', note: 'Great', color: 'bg-emerald-500' },
-            { rank: '3', label: 'Packaged + label', example: '"Oikos yogurt, 130 cal, 20g protein"', note: 'Exact for that item', color: 'bg-emerald-400' },
+            { rank: '3', label: 'Scan a nutrition label', example: 'Tap the barcode icon → photograph the label → enter servings', note: 'Exact every time', color: 'bg-emerald-400' },
             { rank: '4', label: 'Photo + description', example: 'Snap plate + "Chipotle chicken bowl"', note: 'Good — context helps a lot', color: 'bg-blue-400' },
             { rank: '5', label: 'Name it clearly', example: '"Big Mac and large fries"', note: 'Good estimate', color: 'bg-neutral-400' },
             { rank: '6', label: 'Just describe it', example: '"some chicken and rice"', note: 'Rough — still worth logging', color: 'bg-neutral-300' },
