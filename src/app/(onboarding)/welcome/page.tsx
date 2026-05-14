@@ -2,190 +2,365 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronRight } from 'lucide-react'
 
-const STEPS = [
-  {
-    tag: 'Welcome to Pulse',
-    heading: 'Track less.\nLearn more.',
-    subheading: 'Pulse is for people who care about their health but don\'t want tracking to be a second job.',
-    content: (
-      <div className="space-y-3">
-        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
-          <p className="text-emerald-900 font-semibold text-sm">Any log is better than no log</p>
-          <p className="text-emerald-700 text-xs mt-1 leading-relaxed">Even a quick description like &ldquo;burger and fries&rdquo; gives you visibility into what you&apos;re eating — and that awareness is what drives real change. You can&apos;t improve what you can&apos;t see.</p>
-        </div>
-        {[
-          { step: '1', label: 'Log food in plain text', detail: 'Describe what you ate — AI estimates the macros instantly. Any description is better than nothing.' },
-          { step: '2', label: 'Log your weight daily', detail: 'First thing every morning. 10 seconds. Builds your trend line.' },
-          { step: '3', label: 'Complete the Sunday check-in', detail: '4 quick questions. Pulse generates a plain-English weekly report.' },
-        ].map(({ step, label, detail }) => (
-          <div key={step} className="flex gap-3.5 bg-white border border-neutral-200 rounded-2xl p-4">
-            <div className="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">{step}</div>
-            <div>
-              <p className="text-sm font-semibold text-neutral-800">{label}</p>
-              <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">{detail}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    ),
-  },
-  {
-    tag: 'Food Logging',
-    heading: 'Any log beats\nno log.',
-    subheading: 'More detail = more accurate — but a rough entry is always worth logging.',
-    content: (
-      <div className="space-y-3">
-        <div className="bg-white border border-neutral-200 rounded-2xl p-4 space-y-3">
-          <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">Ranked by accuracy</p>
-          {[
-            { rank: '1', label: 'Weigh it', example: '"400g chicken breast, 1 cup rice"', note: 'Most accurate', color: 'bg-emerald-600' },
-            { rank: '2', label: 'Measure it', example: '"1 cup oats, 2 tbsp peanut butter"', note: 'Great', color: 'bg-emerald-500' },
-            { rank: '3', label: 'Scan a nutrition label', example: 'Tap the barcode icon → photograph the label → enter servings', note: 'Exact every time', color: 'bg-emerald-400' },
-            { rank: '4', label: 'Photo + description', example: 'Snap plate + "Chipotle chicken bowl"', note: 'Good — context helps a lot', color: 'bg-blue-400' },
-            { rank: '5', label: 'Name it clearly', example: '"Big Mac and large fries"', note: 'Good estimate', color: 'bg-neutral-400' },
-            { rank: '6', label: 'Just describe it', example: '"some chicken and rice"', note: 'Rough — still worth logging', color: 'bg-neutral-300' },
-          ].map(({ rank, label, example, note, color }) => (
-            <div key={rank} className="flex items-start gap-3">
-              <div className={`w-5 h-5 rounded-full ${color} text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5`}>{rank}</div>
-              <div>
-                <span className="text-neutral-800 text-xs font-semibold">{label}</span>
-                <span className="text-neutral-400 text-xs"> — {note}</span>
-                <p className="text-neutral-500 text-xs mt-0.5 italic">{example}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="bg-white border border-neutral-200 rounded-2xl p-4">
-          <p className="text-sm font-semibold text-neutral-800 mb-1">Every entry is editable</p>
-          <p className="text-xs text-neutral-400 leading-relaxed">Not happy with an estimate? Tap any logged item to adjust the numbers manually. Log fast, refine later.</p>
-        </div>
-      </div>
-    ),
-  },
-  {
-    tag: 'Portions & Estimates',
-    heading: 'Log as you go.\nNot at the end.',
-    subheading: 'You\'ll remember portions more accurately right after eating.',
-    content: (
-      <div className="space-y-3">
-        {[
-          {
-            title: 'Log before or around meal time',
-            body: 'It\'s tempting to dig in first — but 30 seconds before eating builds the habit and keeps portions fresh in your mind. Adjust or edit after you finish.',
-          },
-          {
-            title: 'Use a food scale when you can',
-            body: 'Grams beat visual estimates every time. A $10 kitchen scale is the single best investment for accuracy.',
-          },
-          {
-            title: 'Use measurements as a fallback',
-            body: '1 cup, 1 tbsp, 1 scoop — always better than "some" or "a bit". Give the AI something to work with.',
-          },
-          {
-            title: 'Include cooking method',
-            body: '"Grilled", "fried in oil", "baked" — matters for calories. Frying adds fat; steaming doesn\'t.',
-          },
-        ].map(({ title, body }) => (
-          <div key={title} className="bg-white border border-neutral-200 rounded-2xl p-4">
-            <p className="text-sm font-semibold text-neutral-800">{title}</p>
-            <p className="text-xs text-neutral-400 mt-1 leading-relaxed">{body}</p>
-          </div>
-        ))}
-      </div>
-    ),
-  },
-  {
-    tag: 'Weight & Reports',
-    heading: 'Weigh daily.\nReport weekly.',
-    subheading: null,
-    content: (
-      <div className="space-y-3">
-        <div className="bg-white border border-neutral-200 rounded-2xl p-4 space-y-3">
-          <p className="text-sm font-semibold text-neutral-800">Daily weigh-in rules</p>
-          {[
-            'Same time every day — first thing after waking up',
-            'After using the bathroom, before eating or drinking',
-            'Don\'t panic at daily fluctuations — water, sodium, and sleep affect the scale. The weekly trend is what matters.',
-          ].map(rule => (
-            <div key={rule} className="flex gap-2.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-              <p className="text-xs text-neutral-500 leading-relaxed">{rule}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="bg-white border border-neutral-200 rounded-2xl p-4 space-y-3">
-          <p className="text-sm font-semibold text-neutral-800">The weekly report</p>
-          {[
-            'Complete the check-in every Sunday — 4 questions, takes 30 seconds',
-            'The report connects your food data, weight change, and how you felt that week',
-            'One specific action to take next week — that\'s the only thing you need to read',
-          ].map(rule => (
-            <div key={rule} className="flex gap-2.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-              <p className="text-xs text-neutral-500 leading-relaxed">{rule}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
-          <p className="text-sm font-semibold text-emerald-800">Daily numbers are noisy.</p>
-          <p className="text-xs text-emerald-700 mt-1 leading-relaxed">
-            Don't obsess over a single day. Log consistently, check-in Sunday, and let the report tell you what to adjust.
-          </p>
-        </div>
-      </div>
-    ),
-  },
-]
+const TOTAL = 3
 
 export default function WelcomePage() {
   const router = useRouter()
   const [step, setStep] = useState(0)
-  const current = STEPS[step]
-  const isLast = step === STEPS.length - 1
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex flex-col">
-      <div className="max-w-sm mx-auto w-full flex-1 flex flex-col px-4 pt-8 pb-6">
+    <div className="welcome-root">
+      {/* Progress bar */}
+      <div className="progress-track">
+        <div className="progress-fill" style={{ width: `${((step + 1) / TOTAL) * 100}%` }} />
+      </div>
 
-        {/* Progress dots */}
-        <div className="flex gap-1.5 mb-6">
-          {STEPS.map((_, i) => (
-            <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === step ? 'bg-emerald-500 w-6' : i < step ? 'bg-emerald-300 w-3' : 'bg-neutral-200 w-3'}`} />
-          ))}
+      <div className="welcome-inner">
+        {/* Top row */}
+        <div className="top-row">
+          <span className="step-label">
+            {step === 0 ? 'Getting started' : step === 1 ? 'Logging food' : 'Tracking progress'}
+          </span>
+          <span className="step-counter">{step + 1} / {TOTAL}</span>
         </div>
 
-        {/* Header */}
-        <div className="mb-5">
-          <p className="text-emerald-600 text-xs font-semibold uppercase tracking-widest mb-2">{current.tag}</p>
-          <h1 className="text-3xl font-bold text-neutral-900 leading-tight whitespace-pre-line">{current.heading}</h1>
-          {current.subheading && (
-            <p className="text-neutral-400 text-sm mt-2 leading-relaxed">{current.subheading}</p>
-          )}
+        {/* Heading */}
+        <div className="heading-block" key={`h-${step}`}>
+          <h1 className="heading">
+            {step === 0 ? <>Three habits.<br />That&apos;s it.</> : step === 1 ? <>4 ways<br />to log.</> : <>Weigh in.<br />Report weekly.</>}
+          </h1>
+          <p className="subheading">
+            {step === 0
+              ? 'No calorie counting. No barcodes. Just log, weigh, and check in weekly.'
+              : step === 1
+              ? 'Pick whatever feels fastest — any log is better than no log.'
+              : 'Daily data builds the picture. Weekly reports tell you what to fix.'}
+          </p>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto">{current.content}</div>
+        <div className="content-block" key={`c-${step}`}>
 
-        {/* Navigation */}
-        <div className="flex gap-2 mt-6">
+          {step === 0 && (
+            <div className="stack">
+              {[
+                { icon: '🍽️', label: 'Log meals', desc: 'After each meal — text, voice, photo, or label scan. Takes under 10 seconds.' },
+                { icon: '⚖️', label: 'Weigh in daily', desc: 'First thing every morning. Same time. One number.' },
+                { icon: '📊', label: 'Weekly report', desc: 'Check in every Sunday — 4 questions and you get a full breakdown of your progress.' },
+              ].map((item, i) => (
+                <div key={i} className="row-card" style={{ animationDelay: `${i * 80}ms` }}>
+                  <div className="icon-box">{item.icon}</div>
+                  <div>
+                    <p className="card-title">{item.label}</p>
+                    <p className="card-body">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+              <div className="insight-card" style={{ animationDelay: '260ms' }}>
+                <p className="insight-title">Consistency beats perfection</p>
+                <p className="insight-body">An imperfect log every day beats a perfect log twice a week.</p>
+              </div>
+            </div>
+          )}
+
+          {step === 1 && (
+            <div className="stack">
+              <div className="methods-grid">
+                {[
+                  { icon: '✏️', label: 'Text', desc: 'Describe in plain English' },
+                  { icon: '🎙️', label: 'Voice', desc: 'Speak your meal out loud' },
+                  { icon: '📷', label: 'Photo', desc: 'Snap a picture of your food' },
+                  { icon: '🔲', label: 'Label scan', desc: 'Photograph a nutrition label' },
+                ].map((m, i) => (
+                  <div key={m.label} className="method-card" style={{ animationDelay: `${i * 70}ms` }}>
+                    <span className="method-icon">{m.icon}</span>
+                    <p className="method-label">{m.label}</p>
+                    <p className="method-desc">{m.desc}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="tip-row" style={{ animationDelay: '310ms' }}>
+                <div className="tip-dot" />
+                <p className="tip-text"><strong>Log right after eating</strong> — portions are freshest in memory immediately after a meal.</p>
+              </div>
+              <div className="tip-row" style={{ animationDelay: '370ms' }}>
+                <div className="tip-dot" />
+                <p className="tip-text"><strong>Every entry is editable</strong> — log fast, adjust the numbers later if needed.</p>
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="stack">
+              <div className="section-card" style={{ animationDelay: '0ms' }}>
+                <div className="section-header">
+                  <span className="section-icon">⚖️</span>
+                  <p className="section-title">Daily weigh-in</p>
+                </div>
+                {[
+                  'Same time every morning — right after waking up',
+                  'After bathroom, before eating or drinking',
+                  "Ignore daily swings. The weekly trend is what matters.",
+                ].map((r, i) => (
+                  <div key={i} className="bullet-row">
+                    <div className="bullet" />
+                    <p className="bullet-text">{r}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="section-card" style={{ animationDelay: '90ms' }}>
+                <div className="section-header">
+                  <span className="section-icon">📊</span>
+                  <p className="section-title">Weekly report</p>
+                </div>
+                {[
+                  'Check in every Sunday — 4 questions, 30 seconds',
+                  'Connects your food data, weight trend, and how you felt',
+                  'One specific action to take next week — that&apos;s all you need to read',
+                ].map((r, i) => (
+                  <div key={i} className="bullet-row">
+                    <div className="bullet" />
+                    <p className="bullet-text" dangerouslySetInnerHTML={{ __html: r }} />
+                  </div>
+                ))}
+              </div>
+              <div className="dark-card" style={{ animationDelay: '170ms' }}>
+                <p className="dark-title">Daily numbers are noisy</p>
+                <p className="dark-body">Log consistently, check in Sunday, and let the report tell you what to adjust.</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Nav */}
+        <div className="nav-row">
           {step > 0 && (
-            <button onClick={() => setStep(s => s - 1)}
-              className="px-4 py-3.5 border border-neutral-200 rounded-2xl text-sm font-semibold text-neutral-500 hover:bg-neutral-100 transition-colors">
-              Back
-            </button>
+            <button className="btn-back" onClick={() => setStep(s => s - 1)}>Back</button>
           )}
           <button
-            onClick={() => isLast ? router.push('/home') : setStep(s => s + 1)}
-            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-2xl text-sm transition-colors flex items-center justify-center gap-2">
-            {isLast ? 'Start tracking' : 'Next'}
-            <ChevronRight size={16} />
+            className="btn-next"
+            onClick={() => step === TOTAL - 1 ? router.push('/home') : setStep(s => s + 1)}>
+            {step === TOTAL - 1 ? 'Start tracking' : 'Next'} →
           </button>
         </div>
       </div>
+
+      <style jsx>{`
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
+
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(14px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .welcome-root {
+          min-height: 100svh;
+          background: #f8f7f4;
+          display: flex;
+          flex-direction: column;
+          font-family: 'DM Sans', sans-serif;
+        }
+        .progress-track {
+          height: 3px;
+          background: #e5e5e0;
+        }
+        .progress-fill {
+          height: 100%;
+          background: #059669;
+          transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .welcome-inner {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          max-width: 390px;
+          margin: 0 auto;
+          width: 100%;
+          padding: 28px 20px 24px;
+        }
+        .top-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 28px;
+        }
+        .step-label {
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: #059669;
+        }
+        .step-counter {
+          font-size: 12px;
+          font-weight: 600;
+          color: #c4c4bc;
+        }
+        .heading-block {
+          margin-bottom: 24px;
+          animation: fadeUp 0.4s ease both;
+        }
+        .heading {
+          font-family: 'Instrument Serif', serif;
+          font-size: 42px;
+          line-height: 1.05;
+          color: #0f0f0e;
+          letter-spacing: -0.01em;
+          margin-bottom: 10px;
+        }
+        .subheading {
+          font-size: 14px;
+          color: #828276;
+          line-height: 1.6;
+        }
+        .content-block {
+          flex: 1;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+        .stack { display: flex; flex-direction: column; gap: 10px; }
+
+        /* Step 1 — row cards */
+        .row-card {
+          display: flex;
+          align-items: flex-start;
+          gap: 14px;
+          background: white;
+          border-radius: 16px;
+          padding: 16px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.03);
+          animation: fadeUp 0.4s ease both;
+        }
+        .icon-box {
+          width: 38px;
+          height: 38px;
+          border-radius: 11px;
+          background: #f0fdf4;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 18px;
+          flex-shrink: 0;
+        }
+        .card-title { font-size: 14px; font-weight: 700; color: #0f0f0e; }
+        .card-body  { font-size: 12px; color: #9b9b93; margin-top: 3px; line-height: 1.55; }
+        .insight-card {
+          background: #0f0f0e;
+          border-radius: 16px;
+          padding: 18px;
+          animation: fadeUp 0.4s ease both;
+        }
+        .insight-title { font-size: 13px; font-weight: 700; color: white; }
+        .insight-body  { font-size: 12px; color: #6b6b63; margin-top: 4px; line-height: 1.5; }
+
+        /* Step 2 — methods grid */
+        .methods-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+        .method-card {
+          background: white;
+          border-radius: 16px;
+          padding: 16px 14px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.03);
+          animation: fadeUp 0.38s ease both;
+        }
+        .method-icon  { font-size: 22px; display: block; margin-bottom: 10px; }
+        .method-label { font-size: 13px; font-weight: 700; color: #0f0f0e; }
+        .method-desc  { font-size: 11px; color: #9b9b93; margin-top: 3px; line-height: 1.45; }
+        .tip-row {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          animation: fadeUp 0.38s ease both;
+        }
+        .tip-dot {
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: #059669;
+          flex-shrink: 0;
+          margin-top: 5px;
+        }
+        .tip-text { font-size: 12px; color: #828276; line-height: 1.55; }
+        .tip-text strong { color: #0f0f0e; font-weight: 600; }
+
+        /* Step 3 — section cards */
+        .section-card {
+          background: white;
+          border-radius: 16px;
+          padding: 18px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.03);
+          animation: fadeUp 0.4s ease both;
+        }
+        .section-header {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 14px;
+        }
+        .section-icon  { font-size: 18px; }
+        .section-title { font-size: 14px; font-weight: 700; color: #0f0f0e; }
+        .bullet-row {
+          display: flex;
+          gap: 10px;
+          margin-bottom: 8px;
+        }
+        .bullet-row:last-child { margin-bottom: 0; }
+        .bullet {
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: #059669;
+          flex-shrink: 0;
+          margin-top: 5px;
+        }
+        .bullet-text { font-size: 12px; color: #828276; line-height: 1.55; }
+        .dark-card {
+          background: #0f0f0e;
+          border-radius: 16px;
+          padding: 18px;
+          animation: fadeUp 0.4s ease both;
+        }
+        .dark-title { font-size: 13px; font-weight: 700; color: white; }
+        .dark-body  { font-size: 12px; color: #6b6b63; margin-top: 4px; line-height: 1.5; }
+
+        /* Nav */
+        .nav-row {
+          display: flex;
+          gap: 10px;
+          margin-top: 24px;
+        }
+        .btn-back {
+          padding: 14px 20px;
+          border-radius: 14px;
+          border: 1.5px solid #e5e5e0;
+          background: white;
+          font-size: 14px;
+          font-weight: 600;
+          color: #828276;
+          cursor: pointer;
+          font-family: 'DM Sans', sans-serif;
+          transition: background 0.15s;
+        }
+        .btn-back:hover { background: #f4f3f0; }
+        .btn-next {
+          flex: 1;
+          background: #059669;
+          color: white;
+          font-weight: 700;
+          padding: 14px 24px;
+          border-radius: 14px;
+          font-size: 14px;
+          border: none;
+          cursor: pointer;
+          font-family: 'DM Sans', sans-serif;
+          transition: background 0.15s;
+        }
+        .btn-next:hover { background: #047857; }
+      `}</style>
     </div>
   )
 }
