@@ -82,7 +82,7 @@ export default function WelcomePage() {
               </div>
               <div className="tip-row" style={{ animationDelay: '310ms' }}>
                 <div className="tip-dot" />
-                <p className="tip-text"><strong>Log right after eating</strong> — portions are freshest in memory immediately after a meal.</p>
+                <p className="tip-text"><strong>Log right before eating</strong> — portions are freshest in mind before you dig in.</p>
               </div>
               <div className="tip-row" style={{ animationDelay: '370ms' }}>
                 <div className="tip-dot" />
