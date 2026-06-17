@@ -36,25 +36,16 @@ export async function POST(req: NextRequest) {
     supabase.from('weight_logs').select('weight_lbs').eq('user_id', user.id).order('date', { ascending: false }).limit(1).single(),
   ])
 
-  // Get weight at start and end of week
-  const { data: weightLogs } = await supabase
-    .from('weight_logs')
-    .select('date,weight_lbs')
-    .eq('user_id', user.id)
-    .gte('date', weekStart)
-    .lte('date', weekEnd)
-    .order('date', { ascending: true })
-
-  // Get previous week's report for comparison context
   const prevWeekStart = new Date(weekStart)
   prevWeekStart.setDate(prevWeekStart.getDate() - 7)
   const prevWeekStartStr = prevWeekStart.toISOString().split('T')[0]
-  const { data: prevReport } = await supabase
-    .from('weekly_reports')
-    .select('avg_calories,avg_protein,weight_start,weight_end,days_logged')
-    .eq('user_id', user.id)
-    .eq('week_start', prevWeekStartStr)
-    .maybeSingle()
+
+  // Fetch this week's weight, previous week's weight, and previous week's report in parallel
+  const [{ data: weightLogs }, { data: prevWeightLogs }, { data: prevReport }] = await Promise.all([
+    supabase.from('weight_logs').select('date,weight_lbs').eq('user_id', user.id).gte('date', weekStart).lte('date', weekEnd).order('date', { ascending: true }),
+    supabase.from('weight_logs').select('weight_lbs').eq('user_id', user.id).gte('date', prevWeekStartStr).lt('date', weekStart),
+    supabase.from('weekly_reports').select('avg_calories,avg_protein,weight_start,weight_end,days_logged').eq('user_id', user.id).eq('week_start', prevWeekStartStr).maybeSingle(),
+  ])
 
   // Get 4-week weight trend
   const fourWeeksAgo = new Date(weekStart)
@@ -76,6 +67,16 @@ export async function POST(req: NextRequest) {
   const weightStart = weightLogs?.[0]?.weight_lbs ?? null
   const weightEnd = weightLogs?.[weightLogs.length - 1]?.weight_lbs ?? null
   const weightDelta = weightStart && weightEnd ? (weightEnd - weightStart).toFixed(1) : null
+
+  // Detect sustained 5+ lb shift using weekly averages (filters out daily fluctuation)
+  const thisWeekAvg = (weightLogs?.length ?? 0) >= 3
+    ? weightLogs!.reduce((s, w) => s + w.weight_lbs, 0) / weightLogs!.length
+    : null
+  const prevWeekAvg = (prevWeightLogs?.length ?? 0) >= 3
+    ? prevWeightLogs!.reduce((s, w) => s + w.weight_lbs, 0) / prevWeightLogs!.length
+    : null
+  const twoWeekShift = thisWeekAvg !== null && prevWeekAvg !== null ? thisWeekAvg - prevWeekAvg : null
+  const significantWeightShift = twoWeekShift !== null && Math.abs(twoWeekShift) >= 5
 
   // Per-day calorie breakdown to expose patterns
   const dayMap: Record<string, number> = {}
@@ -164,6 +165,7 @@ export async function POST(req: NextRequest) {
     stallNote ? `- STALL ALERT: ${stallNote}` : '',
     recompNote ? `- RECOMP SIGNAL: ${recompNote}` : '',
     recoveryNote ? `- RECOVERY ALERT: ${recoveryNote}` : '',
+    significantWeightShift && twoWeekShift !== null ? `- WEIGHT_SHIFT: 2-week average weight has moved ${Math.abs(twoWeekShift).toFixed(1)} lbs ${twoWeekShift < 0 ? 'down' : 'up'} (${prevWeekAvg?.toFixed(1)} → ${thisWeekAvg?.toFixed(1)} lbs avg) — maintenance calories have likely shifted` : '',
     calMin !== null && calMax !== null ? `- Calorie range this week: ${calMin}–${calMax} kcal (shows consistency or volatility)` : '',
     avgProtein !== null ? `- Avg daily protein: ${avgProtein}g` : '',
     avgCarbs !== null ? `- Avg daily carbs: ${avgCarbs}g` : '',
@@ -184,6 +186,7 @@ export async function POST(req: NextRequest) {
 - If STALL ALERT is present: name the cause plainly. If tracking was sparse, the data is unreliable and that is likely the real issue. If tracking was good and there's still a stall, it's a genuine plateau — say so.
 - If RECOMP SIGNAL is present: explain that the scale not moving is not a failure — increasing strength while weight holds on a cut is body recomposition. Muscle is being built while fat is being lost. This is a good outcome.
 - If RECOVERY ALERT is present: connect declining strength to poor sleep, not nutrition. This is a recovery problem first.
+- If WEIGHT_SHIFT is present: call out the meaningful body weight change over the past 2 weeks (give the exact amount and direction) and suggest the user recalibrate their calorie and macro targets in the Goals page, since maintenance calories will have shifted.
 - Otherwise: connect gym consistency, sleep, and tracking quality to the outcome directly.
 
 **Next week**
@@ -256,38 +259,7 @@ Write the weekly report.`
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-    // Auto-adjust goals if logged weight has shifted 3+ lbs from profile weight
-    let adjustment = null
-    const latestWeight = latestWeightData?.weight_lbs ?? null
-    if (profile && goals && latestWeight && Math.abs(latestWeight - profile.weight_lbs) >= 3) {
-      const newMacros = calculateMacros(
-        profile.gender as Gender,
-        latestWeight,
-        profile.height_cm,
-        profile.age,
-        profile.activity_level as ActivityLevel,
-        goals.mode as GoalMode
-      )
-      await Promise.all([
-        supabase.from('goals').update({
-          calories: newMacros.calories,
-          protein: newMacros.protein,
-          carbs: newMacros.carbs,
-          fats: newMacros.fats,
-        }).eq('user_id', user.id),
-        supabase.from('user_profiles').update({ weight_lbs: latestWeight }).eq('user_id', user.id),
-      ])
-      adjustment = {
-        weight_was: profile.weight_lbs,
-        weight_now: latestWeight,
-        old_tdee: tdee,
-        new_tdee: newMacros.tdee,
-        old_calories: goals.calories,
-        new_calories: newMacros.calories,
-      }
-    }
-
-    return NextResponse.json({ report, adjustment })
+    return NextResponse.json({ report, suggestRecalibration: significantWeightShift })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }

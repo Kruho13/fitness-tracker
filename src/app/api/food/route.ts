@@ -97,12 +97,13 @@ User daily goals: ${goals?.calories ?? 2200} kcal, ${goals?.protein ?? 180}g pro
 
 Rules:
 - Break the input into individual food items
+- Use your nutritional knowledge for realistic calorie estimates — apply real-world calorie densities per 100g, not a 1:1 gram-to-calorie conversion
 - Use weights/measurements if given; otherwise use realistic common portions
 - If the user provides calories or protein numbers for a specific item, use those exact values
 - Round all numbers to whole numbers
 - meal_name: a short clean label for the whole meal (e.g. "Chicken & Rice Bowl")
 - Never refuse — always return your best estimate
-- reasoning: one plain-English sentence explaining what assumptions you made (e.g. portion sizes assumed, cooking method, variable ingredients). Be specific and honest about uncertainty. Keep it under 20 words.
+- reasoning: 2–4 sentences explaining (1) which calorie density or reference you applied per item, (2) how you estimated portion size if not given, (3) any meaningful sources of uncertainty
 
 Respond ONLY in this exact JSON format:
 {
@@ -134,7 +135,7 @@ Respond ONLY in this exact JSON format:
       : text
 
     const response = await openai.chat.completions.create({
-      model: image ? 'gpt-4o' : 'gpt-4o-mini',
+      model: 'gpt-4o',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userContent },

@@ -28,6 +28,7 @@ export default function LogFoodPage() {
   const [thinkingIdx, setThinkingIdx] = useState(0)
   const [saving, setSaving] = useState(false)
   const [breakdown, setBreakdown] = useState<Breakdown | null>(null)
+  const [showReasoning, setShowReasoning] = useState(false)
   const [logs, setLogs] = useState<FoodLog[]>([])
   const [savedMeals, setSavedMeals] = useState<SavedMeal[]>([])
   const [error, setError] = useState('')
@@ -289,6 +290,7 @@ export default function LogFoodPage() {
       const data = await res.json()
       if (data.error) { setError(data.error); return }
       setBreakdown(data.breakdown)
+      setShowReasoning(false)
       setPopupText('Photo')
     } catch { setError('Failed to estimate. Try again.') }
     finally { setEstimating(false) }
@@ -339,6 +341,7 @@ export default function LogFoodPage() {
       const data = await res.json()
       if (data.error) { setError(data.error); return }
       setBreakdown(data.breakdown)
+      setShowReasoning(false)
       setPopupText(input)
     } catch { setError('Failed to estimate. Try again.') }
     finally { setEstimating(false) }
@@ -357,10 +360,6 @@ export default function LogFoodPage() {
       setLogs(prev => [data.log, ...prev])
       setInput(''); setBreakdown(null)
       navigator.vibrate?.(50)
-      // Show push prompt after first log of the day at streak milestones
-      if (logs.length === 0 && shouldShowPushPrompt(streak)) {
-        setShowPushPrompt(true)
-      }
     } catch { setError('Failed to save.') }
     finally { setSaving(false) }
   }
@@ -840,7 +839,7 @@ export default function LogFoodPage() {
             </button>
           </div>
         </div>
-        <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoSelect} className="hidden" />
+        <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePhotoSelect} className="hidden" />
         <input ref={labelFileInputRef} type="file" accept="image/*" capture="environment" onChange={handleLabelPhotoSelect} className="hidden" />
 
 
@@ -894,10 +893,21 @@ export default function LogFoodPage() {
               </div>
             </div>
 
-            {/* AI reasoning */}
+            {/* AI reasoning — expandable */}
             {breakdown.reasoning && (
               <div className="px-5 mt-2">
-                <p className="text-neutral-400 text-xs italic leading-relaxed">💡 {breakdown.reasoning}</p>
+                <button
+                  onClick={() => setShowReasoning(s => !s)}
+                  className="flex items-center gap-1 text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
+                >
+                  💡 How we calculated this
+                  <span className="ml-0.5 text-[10px]">{showReasoning ? '▲' : '▼'}</span>
+                </button>
+                {showReasoning && (
+                  <p className="mt-1.5 text-neutral-500 text-xs leading-relaxed bg-neutral-50 rounded-xl p-3">
+                    {breakdown.reasoning}
+                  </p>
+                )}
               </div>
             )}
 
