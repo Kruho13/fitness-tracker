@@ -29,6 +29,7 @@ export default function LogFoodPage() {
   const [saving, setSaving] = useState(false)
   const [breakdown, setBreakdown] = useState<Breakdown | null>(null)
   const [showReasoning, setShowReasoning] = useState(false)
+  const [correctionHint, setCorrectionHint] = useState('')
   const [logs, setLogs] = useState<FoodLog[]>([])
   const [savedMeals, setSavedMeals] = useState<SavedMeal[]>([])
   const [error, setError] = useState('')
@@ -291,6 +292,7 @@ export default function LogFoodPage() {
       if (data.error) { setError(data.error); return }
       setBreakdown(data.breakdown)
       setShowReasoning(false)
+      setCorrectionHint('')
       setPopupText('Photo')
     } catch { setError('Failed to estimate. Try again.') }
     finally { setEstimating(false) }
@@ -342,6 +344,7 @@ export default function LogFoodPage() {
       if (data.error) { setError(data.error); return }
       setBreakdown(data.breakdown)
       setShowReasoning(false)
+      setCorrectionHint('')
       setPopupText(input)
     } catch { setError('Failed to estimate. Try again.') }
     finally { setEstimating(false) }
@@ -365,15 +368,18 @@ export default function LogFoodPage() {
   }
 
   async function handleReestimate() {
-    if (!popupText.trim()) return
     setReestimating(true)
     try {
+      const isPhoto = popupText === 'Photo'
       const res = await fetch('/api/food?mode=estimate', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: popupText }),
+        body: JSON.stringify(isPhoto
+          ? { image: photoPreview, text: correctionHint.trim() || undefined }
+          : { text: popupText }
+        ),
       })
       const data = await res.json()
-      if (data.breakdown) setBreakdown(data.breakdown)
+      if (data.breakdown) { setBreakdown(data.breakdown); setShowReasoning(false) }
     } catch { /* keep existing breakdown */ }
     finally { setReestimating(false) }
   }
@@ -874,23 +880,41 @@ export default function LogFoodPage() {
           <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-slide-up" onClick={e => e.stopPropagation()}>
             <div className="px-5 pt-5 pb-3">
               <h2 className="text-neutral-900 font-bold text-lg">{breakdown.meal_name}</h2>
-              <p className="text-neutral-400 text-xs mt-0.5">Edit your description to adjust portions, then re-estimate</p>
+              <p className="text-neutral-400 text-xs mt-0.5">
+                {popupText === 'Photo' ? 'Got it wrong? Give us a pointer' : 'Edit your description to adjust portions, then re-estimate'}
+              </p>
             </div>
 
             {/* Editable description + re-estimate */}
             <div className="px-5 space-y-2">
-              <div className="flex gap-2">
-                <textarea
-                  value={popupText}
-                  onChange={e => setPopupText(e.target.value)}
-                  rows={2}
-                  className="flex-1 bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-800 focus:outline-none focus:border-emerald-500 resize-none"
-                />
-                <button onClick={handleReestimate} disabled={reestimating || !popupText.trim()}
-                  className="self-stretch px-3 text-xs font-semibold text-white bg-emerald-600 rounded-xl disabled:opacity-40 shrink-0">
-                  {reestimating ? '...' : 'Re-estimate'}
-                </button>
-              </div>
+              {popupText === 'Photo' ? (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={correctionHint}
+                    onChange={e => setCorrectionHint(e.target.value)}
+                    placeholder='e.g. "that\'s mutton not chicken" or "add a side of rice"'
+                    className="flex-1 bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-800 focus:outline-none focus:border-emerald-500"
+                  />
+                  <button onClick={handleReestimate} disabled={reestimating}
+                    className="self-stretch px-3 text-xs font-semibold text-white bg-emerald-600 rounded-xl disabled:opacity-40 shrink-0">
+                    {reestimating ? '...' : 'Re-estimate'}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <textarea
+                    value={popupText}
+                    onChange={e => setPopupText(e.target.value)}
+                    rows={2}
+                    className="flex-1 bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-800 focus:outline-none focus:border-emerald-500 resize-none"
+                  />
+                  <button onClick={handleReestimate} disabled={reestimating || !popupText.trim()}
+                    className="self-stretch px-3 text-xs font-semibold text-white bg-emerald-600 rounded-xl disabled:opacity-40 shrink-0">
+                    {reestimating ? '...' : 'Re-estimate'}
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* AI reasoning — expandable */}

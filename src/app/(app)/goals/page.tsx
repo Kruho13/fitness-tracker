@@ -78,7 +78,8 @@ export default function GoalsPage() {
     Promise.all([
       fetch('/api/goals').then(r => r.json()),
       fetch('/api/profile').then(r => r.json()),
-    ]).then(([goalsData, profileData]) => {
+      fetch('/api/weight').then(r => r.json()),
+    ]).then(([goalsData, profileData, weightData]) => {
       const savedGoals = goalsData.goals
       const p = profileData.profile
 
@@ -93,13 +94,15 @@ export default function GoalsPage() {
         if (p.name) setName(p.name)
         setGender(p.gender)
         setAge(p.age)
-        setWeightLbs(p.weight_lbs)
+        // Use latest logged weight if available, otherwise fall back to profile weight
+        setWeightLbs(weightData?.latest?.weight_lbs ?? p.weight_lbs)
         setHeightCm(p.height_cm)
         setActivity(p.activity_level)
 
         // If saved macros differ from what calculation would produce, treat as overridden
         if (savedGoals) {
-          const calc = calculateMacros(p.gender, p.weight_lbs, p.height_cm, p.age, p.activity_level, savedGoals.mode)
+          const currentWeight = weightData?.latest?.weight_lbs ?? p.weight_lbs
+          const calc = calculateMacros(p.gender, currentWeight, p.height_cm, p.age, p.activity_level, savedGoals.mode)
           if (calc.calories !== savedGoals.calories || calc.protein !== savedGoals.protein) {
             setOverridden(true)
           }

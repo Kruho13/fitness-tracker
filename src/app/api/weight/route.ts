@@ -2,6 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { todayCT } from '@/lib/utils'
 
+export async function GET() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { data } = await supabase
+    .from('weight_logs')
+    .select('weight_lbs,date')
+    .eq('user_id', user.id)
+    .order('date', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  return NextResponse.json({ latest: data ?? null })
+}
+
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
