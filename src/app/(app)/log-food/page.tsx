@@ -893,7 +893,7 @@ export default function LogFoodPage() {
                     type="text"
                     value={correctionHint}
                     onChange={e => setCorrectionHint(e.target.value)}
-                    placeholder='e.g. "that\'s mutton not chicken" or "add a side of rice"'
+                    placeholder='e.g. "wrong protein" or "add a side of rice"'
                     className="flex-1 bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-800 focus:outline-none focus:border-emerald-500"
                   />
                   <button onClick={handleReestimate} disabled={reestimating}
