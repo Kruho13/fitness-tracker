@@ -3,19 +3,21 @@
 import { useState, useEffect, useRef } from 'react'
 import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Pencil, Check, X, Plus, BookOpen, Flame, Camera, Mic, Utensils, Bell, Barcode } from 'lucide-react'
 import { logDateCT, formatDate } from '@/lib/utils'
+import type { FoodLogItem, Micronutrients } from '@/lib/nutrition'
 
-interface FoodItem { name: string; calories: number; protein: number; carbs: number; fats: number }
+type FoodItem = FoodLogItem
 interface ClarificationQuestion { question: string; likely_answers: [string, string]; impact?: string }
 interface Breakdown {
   meal_name: string; reasoning?: string; items: FoodItem[]; total: FoodItem
   uncertainty?: 'low' | 'medium' | 'high'
   clarification_needed?: boolean
   clarification_questions?: ClarificationQuestion[]
+  micronutrients?: Micronutrients
 }
 interface FoodLog { id: string; raw_text: string; meal_name: string | null; calories: number; protein: number; carbs: number; fats: number }
 interface SavedMeal { id: string; name: string; calories: number; protein: number; carbs: number; fats: number }
 interface SavedLabel { id: string; name: string; serving_size: string | null; calories: number; protein: number; carbs: number; fats: number }
-type LabelScanState = { name: string; serving_size: string; calories: number; protein: number; carbs: number; fats: number } | null
+type LabelScanState = { name: string; serving_size: string; calories: number; protein: number; carbs: number; fats: number; fiber?: number; sodium?: number; sugar_added?: number; saturated_fat?: number } | null
 type LogEditState = { id: string; rawText: string; calories: number; protein: number; carbs: number; fats: number; meal_name: string } | null
 type MealEditState = { id: string; name: string; portion: string; calories: number; protein: number; carbs: number; fats: number } | null
 
@@ -202,6 +204,10 @@ export default function LogFoodPage() {
           protein: Math.round(labelScan.protein * qty),
           carbs: Math.round(labelScan.carbs * qty),
           fats: Math.round(labelScan.fats * qty),
+          fiber: Math.round((labelScan.fiber ?? 0) * qty),
+          sodium: Math.round((labelScan.sodium ?? 0) * qty),
+          sugar_added: Math.round((labelScan.sugar_added ?? 0) * qty),
+          saturated_fat: Math.round((labelScan.saturated_fat ?? 0) * qty),
         },
         meal_name: labelScan.name,
       }

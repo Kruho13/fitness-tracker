@@ -75,6 +75,14 @@ export function last8WeekStarts(): string[] {
   return mondays
 }
 
+// Date string N days before today, in Central Time (YYYY-MM-DD)
+export function daysAgoCT(n: number): string {
+  const now = new Date()
+  const ct = toZonedTime(now, CT_TIMEZONE)
+  ct.setDate(ct.getDate() - n)
+  return format(ct, 'yyyy-MM-dd')
+}
+
 export function clampPercent(value: number, goal: number): number {
   if (goal === 0) return 0
   return Math.min(100, Math.round((value / goal) * 100))
