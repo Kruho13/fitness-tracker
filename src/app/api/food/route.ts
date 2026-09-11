@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const mode = req.nextUrl.searchParams.get('mode') ?? 'save'
-  const { text, date, macros, image } = await req.json()
+  const { text, date, macros, image, clarificationAnswers } = await req.json()
 
   // Mode: save — directly store pre-estimated macros (from confirm popup)
   if (mode === 'save' && macros) {
@@ -91,6 +91,17 @@ Read values exactly as printed. Always return all fields.`,
 
   const { data: goals } = await supabase.from('goals').select('*').eq('user_id', user.id).single()
 
+  // clarificationAnswers is present (even as []) once the user has been through a clarification
+  // round — that must stop the model from asking again, regardless of whether they answered.
+  const clarificationProvided = Array.isArray(clarificationAnswers)
+  const hasAnswers = clarificationProvided && clarificationAnswers.length > 0
+
+  const clarificationInstruction = !clarificationProvided
+    ? `Decide whether any missing detail would materially change the calorie/macro estimate — things like cooking method (grilled vs fried), sauce/dressing on a variable dish, or a completely unspecified portion size for a food that varies a lot by serving. Only ask about details that would meaningfully move the numbers; never ask about something that barely matters (e.g. don't ask about a single banana's ripeness, or the exact type of plain yogurt). Examples: "1 banana" or "170g plain Greek yogurt" need no questions. "Chicken sandwich" is worth asking whether the chicken is grilled or fried. "Pasta" is worth asking about the sauce if it isn't stated. "Chicken pulao" only needs a question if portion or preparation is genuinely unclear and would change the numbers. Ask 0 questions when the input is already clear, 1 when there's exactly one major uncertainty, and 2 only when two separate uncertainties each materially affect the estimate — never more than 2. For each question, generate the two most likely answers for this specific food (not generic placeholders), and a one-sentence "impact" explaining why it changes the estimate.`
+    : hasAnswers
+      ? `The user has already answered clarifying questions — see "Clarifying answers" below. Use them to refine your estimate. Set "clarification_needed" to false and "clarification_questions" to an empty array — do not ask anything further.`
+      : `The user was asked clarifying questions but chose not to answer (skipped/unsure). Do not ask again — use sensible default assumptions, and set "clarification_needed" to false and "clarification_questions" to an empty array.`
+
   const systemPrompt = `You are a nutrition estimation assistant. Convert a food description into a structured macro breakdown.
 
 User daily goals: ${goals?.calories ?? 2200} kcal, ${goals?.protein ?? 180}g protein.
@@ -102,23 +113,37 @@ Rules:
 - If the user provides calories or protein numbers for a specific item, use those exact values
 - Round all numbers to whole numbers
 - meal_name: a short clean label for the whole meal (e.g. "Chicken & Rice Bowl")
-- Never refuse — always return your best estimate
+- Never refuse — always return your best estimate, using sensible default assumptions for anything uncertain (even while clarification_needed is true)
 - reasoning: 2–4 sentences explaining (1) which calorie density or reference you applied per item, (2) how you estimated portion size if not given, (3) any meaningful sources of uncertainty
+- uncertainty: "low", "medium", or "high" — your overall confidence in this estimate
+- ${clarificationInstruction}
 
 Respond ONLY in this exact JSON format:
 {
   "meal_name": "string",
   "reasoning": "string",
+  "uncertainty": "low" | "medium" | "high",
+  "clarification_needed": boolean,
+  "clarification_questions": [
+    { "question": "string", "likely_answers": ["string", "string"], "impact": "string" }
+  ],
   "items": [
     { "name": "string", "calories": number, "protein": number, "carbs": number, "fats": number }
   ],
   "total": { "calories": number, "protein": number, "carbs": number, "fats": number }
 }`
 
+  const clarificationContext = hasAnswers
+    ? `\n\nClarifying answers:\n${clarificationAnswers.map((a: { question: string; answer: string }) => `- ${a.question}: ${a.answer}`).join('\n')}`
+    : clarificationProvided
+      ? `\n\n(No clarification details provided — use your best-guess defaults.)`
+      : ''
+
   try {
-    // Cache check — text only (images always re-estimate)
+    // Cache check — text only (images always re-estimate); a clarification round makes the input distinct
+    const cacheableText = clarificationProvided ? `${text}||${JSON.stringify(clarificationAnswers)}` : text
     if (!image) {
-      const key = cacheKey(text)
+      const key = cacheKey(cacheableText)
       const { data: cached } = await supabase
         .from('food_estimate_cache')
         .select('result')
@@ -129,10 +154,10 @@ Respond ONLY in this exact JSON format:
 
     const userContent = image
       ? [
-          { type: 'text' as const, text: text?.trim() ? text : 'What food is in this image? Estimate the macros.' },
+          { type: 'text' as const, text: (text?.trim() ? text : 'What food is in this image? Estimate the macros.') + clarificationContext },
           { type: 'image_url' as const, image_url: { url: image } },
         ]
-      : text
+      : text + clarificationContext
 
     const response = await openai.chat.completions.create({
       model: 'gpt-5.4-mini',
@@ -141,7 +166,7 @@ Respond ONLY in this exact JSON format:
         { role: 'user', content: userContent },
       ],
       response_format: { type: 'json_object' },
-      max_tokens: 600,
+      max_tokens: 700,
       temperature: 0,
       seed: 42,
     })
@@ -151,7 +176,7 @@ Respond ONLY in this exact JSON format:
     // Store in cache for future identical inputs
     if (!image) {
       await supabase.from('food_estimate_cache').upsert({
-        text_hash: cacheKey(text),
+        text_hash: cacheKey(cacheableText),
         result: parsed,
       })
     }

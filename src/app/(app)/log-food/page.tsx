@@ -5,7 +5,13 @@ import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Pencil, Chec
 import { logDateCT, formatDate } from '@/lib/utils'
 
 interface FoodItem { name: string; calories: number; protein: number; carbs: number; fats: number }
-interface Breakdown { meal_name: string; reasoning?: string; items: FoodItem[]; total: FoodItem }
+interface ClarificationQuestion { question: string; likely_answers: [string, string]; impact?: string }
+interface Breakdown {
+  meal_name: string; reasoning?: string; items: FoodItem[]; total: FoodItem
+  uncertainty?: 'low' | 'medium' | 'high'
+  clarification_needed?: boolean
+  clarification_questions?: ClarificationQuestion[]
+}
 interface FoodLog { id: string; raw_text: string; meal_name: string | null; calories: number; protein: number; carbs: number; fats: number }
 interface SavedMeal { id: string; name: string; calories: number; protein: number; carbs: number; fats: number }
 interface SavedLabel { id: string; name: string; serving_size: string | null; calories: number; protein: number; carbs: number; fats: number }
@@ -43,6 +49,9 @@ export default function LogFoodPage() {
   const [logEditEstimating, setLogEditEstimating] = useState(false)
   const [popupText, setPopupText] = useState('')
   const [reestimating, setReestimating] = useState(false)
+  // Keyed by question index; value is the chosen answer, or null for "not sure" — key presence means answered
+  const [clarificationAnswers, setClarificationAnswers] = useState<Record<number, string | null>>({})
+  const [resolvingClarification, setResolvingClarification] = useState(false)
   const [calorieGoal, setCalorieGoal] = useState<number | null>(null)
   const [proteinGoal, setProteinGoal] = useState<number | null>(null)
   const [carbGoal, setCarbGoal] = useState<number | null>(null)
@@ -281,6 +290,21 @@ export default function LogFoodPage() {
     e.target.value = ''
   }
 
+  // A fresh breakdown always starts a new clarification round (if any)
+  function applyBreakdown(bd: Breakdown) {
+    setBreakdown(bd)
+    setShowReasoning(false)
+    setClarificationAnswers({})
+  }
+
+  // Reconstructs the request body from current popup state — shared by re-estimate and clarification resolution
+  function buildEstimateBody(extra: Record<string, unknown> = {}) {
+    const isPhoto = popupText === 'Photo'
+    return isPhoto
+      ? { image: photoPreview, text: correctionHint.trim() || undefined, ...extra }
+      : { text: popupText, ...extra }
+  }
+
   async function handleEstimateFromImage(dataUrl: string) {
     setEstimating(true); setError('')
     try {
@@ -290,8 +314,7 @@ export default function LogFoodPage() {
       })
       const data = await res.json()
       if (data.error) { setError(data.error); return }
-      setBreakdown(data.breakdown)
-      setShowReasoning(false)
+      applyBreakdown(data.breakdown)
       setCorrectionHint('')
       setPopupText('Photo')
     } catch { setError('Failed to estimate. Try again.') }
@@ -342,8 +365,7 @@ export default function LogFoodPage() {
       })
       const data = await res.json()
       if (data.error) { setError(data.error); return }
-      setBreakdown(data.breakdown)
-      setShowReasoning(false)
+      applyBreakdown(data.breakdown)
       setCorrectionHint('')
       setPopupText(input)
     } catch { setError('Failed to estimate. Try again.') }
@@ -370,19 +392,47 @@ export default function LogFoodPage() {
   async function handleReestimate() {
     setReestimating(true)
     try {
-      const isPhoto = popupText === 'Photo'
       const res = await fetch('/api/food?mode=estimate', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(isPhoto
-          ? { image: photoPreview, text: correctionHint.trim() || undefined }
-          : { text: popupText }
-        ),
+        body: JSON.stringify(buildEstimateBody()),
       })
       const data = await res.json()
-      if (data.breakdown) { setBreakdown(data.breakdown); setShowReasoning(false) }
+      if (data.breakdown) applyBreakdown(data.breakdown)
     } catch { /* keep existing breakdown */ }
     finally { setReestimating(false) }
   }
+
+  function handleAnswerClarification(index: number, answer: string | null) {
+    setClarificationAnswers(prev => ({ ...prev, [index]: answer }))
+  }
+
+  // Fires once every clarification question has an answer (or was skipped) — sends them back for a refined estimate
+  async function handleResolveClarification() {
+    if (!breakdown?.clarification_questions?.length) return
+    setResolvingClarification(true)
+    try {
+      const answers = breakdown.clarification_questions
+        .map((q, i) => ({ question: q.question, answer: clarificationAnswers[i] }))
+        .filter((a): a is { question: string; answer: string } => !!a.answer)
+      const res = await fetch('/api/food?mode=estimate', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildEstimateBody({ clarificationAnswers: answers })),
+      })
+      const data = await res.json()
+      if (data.breakdown) applyBreakdown(data.breakdown)
+    } catch { /* keep provisional breakdown */ }
+    finally { setResolvingClarification(false) }
+  }
+
+  // Auto-advance once every clarification question in the current round has a decision
+  useEffect(() => {
+    const questions = breakdown?.clarification_questions
+    if (!breakdown?.clarification_needed || !questions?.length) return
+    if (Object.keys(clarificationAnswers).length === questions.length) {
+      handleResolveClarification()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clarificationAnswers])
 
   async function handleDeleteLog(id: string) {
     await fetch('/api/food', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
@@ -885,6 +935,46 @@ export default function LogFoodPage() {
               </p>
             </div>
 
+            {/* Clarification questions — 0-2, only when they'd materially change the estimate */}
+            {breakdown.clarification_needed && breakdown.clarification_questions && breakdown.clarification_questions.length > 0 && (
+              <div className="px-5 pb-3 space-y-2.5">
+                {breakdown.clarification_questions.map((q, i) => {
+                  const answer = clarificationAnswers[i]
+                  const isAnswered = Object.prototype.hasOwnProperty.call(clarificationAnswers, i)
+                  return (
+                    <div key={i} className="bg-amber-50 border border-amber-100 rounded-2xl p-3.5 space-y-2">
+                      <p className="text-neutral-800 text-sm font-semibold">{q.question}</p>
+                      {q.impact && <p className="text-neutral-500 text-xs">{q.impact}</p>}
+                      <div className="flex gap-2">
+                        {q.likely_answers.slice(0, 2).map(opt => (
+                          <button key={opt} type="button" onClick={() => handleAnswerClarification(i, opt)} disabled={resolvingClarification}
+                            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-colors disabled:opacity-50 ${answer === opt ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50'}`}>
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="text"
+                          placeholder="Other..."
+                          defaultValue={isAnswered && answer && !q.likely_answers.includes(answer) ? answer : ''}
+                          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); const v = (e.target as HTMLInputElement).value.trim(); if (v) handleAnswerClarification(i, v) } }}
+                          onBlur={e => { const v = e.target.value.trim(); if (v) handleAnswerClarification(i, v) }}
+                          disabled={resolvingClarification}
+                          className="flex-1 bg-white border border-neutral-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-emerald-500 disabled:opacity-50"
+                        />
+                        <button type="button" onClick={() => handleAnswerClarification(i, null)} disabled={resolvingClarification}
+                          className={`text-xs font-medium px-2 py-1.5 rounded-lg shrink-0 disabled:opacity-50 ${isAnswered && answer === null ? 'text-emerald-700 bg-emerald-50' : 'text-neutral-400 hover:text-neutral-600'}`}>
+                          Not sure
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+                {resolvingClarification && <p className="text-xs text-neutral-400 text-center">Refining estimate...</p>}
+              </div>
+            )}
+
             {/* Editable description + re-estimate */}
             <div className="px-5 space-y-2">
               {popupText === 'Photo' ? (
@@ -954,7 +1044,9 @@ export default function LogFoodPage() {
 
             {/* Total */}
             <div className="mx-5 mt-3 bg-neutral-900 rounded-2xl p-4">
-              <p className="text-neutral-400 text-xs font-medium mb-2">Total</p>
+              <p className="text-neutral-400 text-xs font-medium mb-2">
+                Total{breakdown.clarification_needed ? ' (provisional)' : ''}
+              </p>
               <div className="grid grid-cols-4 gap-2 text-center">
                 {[
                   { label: 'Cal', value: breakdown.total.calories, color: 'text-emerald-400' },
@@ -975,7 +1067,7 @@ export default function LogFoodPage() {
                 className="flex-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-semibold py-3 rounded-xl text-sm transition-colors">
                 Cancel
               </button>
-              <button onClick={handleConfirm} disabled={saving || reestimating}
+              <button onClick={handleConfirm} disabled={saving || reestimating || resolvingClarification}
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl text-sm transition-colors">
                 {saving ? 'Saving...' : 'Confirm & log'}
               </button>
