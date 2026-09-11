@@ -135,7 +135,7 @@ Respond ONLY in this exact JSON format:
       : text
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-5.4-mini',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userContent },
