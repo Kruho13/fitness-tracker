@@ -166,9 +166,8 @@ Respond ONLY in this exact JSON format:
         { role: 'user', content: userContent },
       ],
       response_format: { type: 'json_object' },
-      max_tokens: 700,
-      temperature: 0,
-      seed: 42,
+      max_completion_tokens: 700,
+      reasoning_effort: 'low',
     })
 
     const parsed = JSON.parse(response.choices[0].message.content || '{}')
