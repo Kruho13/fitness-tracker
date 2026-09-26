@@ -33,6 +33,8 @@ export default function GoalsPage() {
   const [notifEnabled, setNotifEnabled] = useState(false)
   const [notifLoading, setNotifLoading] = useState(false)
   const [notifError, setNotifError] = useState('')
+  const [webhookToken, setWebhookToken] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if ('Notification' in window) {
@@ -110,6 +112,18 @@ export default function GoalsPage() {
       }
     }).finally(() => setFetching(false))
   }, [])
+
+  useEffect(() => {
+    fetch('/api/steps/token').then(r => r.json()).then(d => { if (d.token) setWebhookToken(d.token) })
+  }, [])
+
+  function handleCopyWebhookUrl() {
+    if (!webhookToken) return
+    const url = `${window.location.origin}/api/steps/webhook?token=${webhookToken}`
+    navigator.clipboard.writeText(url)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   // Recalculate whenever profile fields or mode changes, unless user has manually overridden
   useEffect(() => {
@@ -282,6 +296,18 @@ export default function GoalsPage() {
                 </button>
               </div>
             )}
+          </section>
+
+          {/* Steps sync — webhook URL for an Apple Shortcuts automation */}
+          <section className="bg-white rounded-2xl px-4 py-4 space-y-2" style={{ boxShadow: 'var(--card-shadow)' }}>
+            <p className="text-sm font-semibold text-neutral-700">Steps sync</p>
+            <p className="text-xs text-neutral-400">
+              Copy this URL into an Apple Shortcuts automation to sync your step count. It sends a POST request with JSON body <code>{'{ "steps": number }'}</code>.
+            </p>
+            <button type="button" onClick={handleCopyWebhookUrl} disabled={!webhookToken}
+              className="w-full text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 rounded-xl py-2.5 transition-colors">
+              {copied ? '✓ Copied' : webhookToken ? 'Copy webhook URL' : 'Loading...'}
+            </button>
           </section>
 
           <button type="submit" disabled={loading}
