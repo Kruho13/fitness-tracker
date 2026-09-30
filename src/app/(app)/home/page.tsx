@@ -17,17 +17,14 @@ export default async function HomePage() {
   const today = todayCT()
   const firstName = user.user_metadata?.full_name?.split(' ')[0] ?? 'there'
 
-  const [goalsRes, foodRes, weightRes, checkinRes, streakRes, tenDayFoodRes, stepsRes] = await Promise.all([
+  const [goalsRes, foodRes, weightRes, checkinRes, streakRes, tenDayFoodRes] = await Promise.all([
     supabase.from('goals').select('*').eq('user_id', user.id).single(),
     supabase.from('food_logs').select('calories,protein').eq('user_id', user.id).eq('date', today),
     supabase.from('weight_logs').select('date,weight_lbs').eq('user_id', user.id).gte('date', getFourWeeksAgo()).order('date', { ascending: true }),
     supabase.from('weekly_checkins').select('id').eq('user_id', user.id).eq('week_start', currentWeekStartCT()).maybeSingle(),
     supabase.from('food_logs').select('date').eq('user_id', user.id).gte('date', getThirtyDaysAgo()).order('date', { ascending: false }),
     supabase.from('food_logs').select('date,calories').eq('user_id', user.id).gte('date', getSevenDaysAgo()).order('date', { ascending: true }),
-    supabase.from('step_logs').select('steps').eq('user_id', user.id).eq('date', today).maybeSingle(),
   ])
-
-  const stepsToday = stepsRes.data?.steps ?? null
 
   const goals = goalsRes.data ?? { calories: 2200, protein: 180, mode: 'maintain' }
   const foodLogs = foodRes.data ?? []
@@ -164,7 +161,7 @@ export default async function HomePage() {
         <WeightChart data={weightData} />
 
         {/* Weekly stats line */}
-        {(avgCaloriesThisWeek !== null || weightSMADelta !== null || stepsToday !== null) && (
+        {(avgCaloriesThisWeek !== null || weightSMADelta !== null) && (
           <div
             className="rounded-2xl px-4 py-3 flex items-center gap-2"
             style={{ background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.05)' }}
@@ -174,8 +171,6 @@ export default async function HomePage() {
               {avgCaloriesThisWeek !== null && `Averaging ${avgCaloriesThisWeek} kcal/day this week`}
               {avgCaloriesThisWeek !== null && weightSMADelta !== null && ' · '}
               {weightSMADelta !== null && `weight avg ${weightSMADelta < 0 ? 'down' : weightSMADelta > 0 ? 'up' : 'stable'}${Math.abs(weightSMADelta) > 0 ? ` ${Math.abs(weightSMADelta)} lbs` : ''} vs last week`}
-              {(avgCaloriesThisWeek !== null || weightSMADelta !== null) && stepsToday !== null && ' · '}
-              {stepsToday !== null && `${stepsToday.toLocaleString()} steps today`}
             </p>
           </div>
         )}
