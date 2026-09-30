@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { currentWeekStartCT, currentWeekEndCT } from '@/lib/utils'
 import { calculateMacros, type Gender, type ActivityLevel, type GoalMode } from '@/lib/calculations'
 
+export const maxDuration = 30
+
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 export async function POST(req: NextRequest) {

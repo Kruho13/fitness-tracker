@@ -3,6 +3,8 @@ import OpenAI from 'openai'
 import { createClient } from '@/lib/supabase/server'
 import { daysAgoCT } from '@/lib/utils'
 import { calculateMacros, type Gender, type ActivityLevel, type GoalMode } from '@/lib/calculations'
+
+export const maxDuration = 30
 import { getNutritionAverages, getWeeklyBalance } from '@/lib/nutrition-data'
 import {
   NUTRITION_PLUS_KEYS, NUTRITION_PLUS_REFERENCE, MICRONUTRIENT_REFERENCE,

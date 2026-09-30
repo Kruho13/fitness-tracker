@@ -3,6 +3,10 @@ import OpenAI from 'openai'
 import { createHash } from 'crypto'
 import { createClient } from '@/lib/supabase/server'
 import { todayCT, logDateCT } from '@/lib/utils'
+
+// The estimate/label modes call OpenAI with a large structured schema (Nutrition+,
+// micronutrients, classification) — default Vercel function timeout is too tight for that.
+export const maxDuration = 30
 import { CLASSIFIER_VERSION, NUTRITION_PLUS_KEYS, type FoodClassification } from '@/lib/nutrition'
 
 function cacheKey(text: string): string {
